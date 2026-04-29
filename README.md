@@ -5,9 +5,13 @@
 
 # Top Paper MCP Server
 
+![Top Paper MCP Server](./figs/logo.png)
+
 > 🔍 Enable AI assistants to search and access academic papers from arXiv and top conferences through a simple MCP interface.
 
 The Top Paper MCP Server provides a bridge between AI assistants and academic research repositories (arXiv, CVPR, NeurIPS, ICLR, ICML, etc.) through the Model Context Protocol (MCP). It allows AI models to search for papers and access their content in a programmatic way.
+
+**This is a fork of [arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server) with extended conference support and additional features.**
 
 <div align="center">
   

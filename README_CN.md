@@ -1,13 +1,12 @@
 # Top Paper MCP Server
 
-[![PyPI Version](https://img.shields.io/pypi/v/top-paper-mcp-server.svg)](https://pypi.org/project/top-paper-mcp-server/)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/top-paper-mcp-server.svg)](https://pypi.org/project/top-paper-mcp-server/)
-[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![Top Paper MCP Server](./figs/logo.png)
 
 > 🔍 通过简单的 MCP 接口帮助 AI 助手搜索和获取来自 arXiv 及顶级学术会议的论文。
 
 Top Paper MCP Server 搭建了 AI 助手与学术研究资源（arXiv、CVPR、NeurIPS、ICLR、ICML 等）之间的桥梁，通过模型上下文协议（MCP）实现论文搜索和内容获取的编程方式访问。
+
+**这是 [arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server) 的分支，增加了更多会议支持和额外功能。**
 
 <div align="center">
   
