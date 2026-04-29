@@ -17,7 +17,7 @@ def _generate_venue_ids():
     ids = {}
     for year in range(2000, 2030):
         ids[("ICLR", year)] = f"ICLR.cc/{year}/Conference"
-        ids[("NeurIPS", year)] = f"NeurIPS.cc/{year}"
+        ids[("NEURIPS", year)] = f"NeurIPS.cc/{year}/Conference"
         ids[("ICML", year)] = f"ICML.cc/{year}/Conference"
         ids[("AAAI", year)] = f"AAAI.org/{year}/Conference"
         ids[("IJCAI", year)] = f"IJCAI.org/{year}/Conference"
@@ -25,15 +25,15 @@ def _generate_venue_ids():
         ids[("ICCV", year)] = f"ICCV{year}"
         ids[("WACV", year)] = f"WACV{year}"
         ids[("ECCV", year)] = f"ECCV{year}"
-        ids[("ACL", year)] = f"aclweb.org/{year}"
-        ids[("EMNLP", year)] = f"emnlp.org/{year}"
-        ids[("NAACL", year)] = f"naacl.org/{year}"
-        ids[("COLM", year)] = f"COLM/{year}"
-        ids[("CoRL", year)] = f"CoRL.{year}"
-        ids[("MLSYS", year)] = f"mlsys.org/{year}"
-        ids[("MICCAI", year)] = f"miccai.org/{year}"
-        ids[("IWSLT", year)] = f"iwslt.org/{year}"
-        ids[("INTERSPEECH", year)] = f"interspeech.org/{year}"
+        ids[("ACL", year)] = f"aclweb.org/ACL/{year}/Conference"
+        ids[("EMNLP", year)] = f"EMNLP/{year}/Conference"
+        ids[("NAACL", year)] = f"NAACL/{year}/Conference"
+        ids[("COLM", year)] = f"COLM.org/{year}/Conference"
+        ids[("CORL", year)] = f"robot-learning.org/CoRL/{year}/Conference"
+        ids[("MLSYS", year)] = f"MLSys.org/{year}/Conference"
+        ids[("MICCAI", year)] = f"miccai.org/{year}/Conference"
+        ids[("IWSLT", year)] = f"iwslt.org/{year}/Conference"
+        ids[("INTERSPEECH", year)] = f"interspeech.org/{year}/Conference"
     return ids
 
 
@@ -70,6 +70,32 @@ class OpenReviewSource(ConferenceSource):
         """Get OpenReview venue ID for conference."""
         return VENUE_IDS.get((conference.upper(), year))
 
+    @staticmethod
+    def _get_content_value(content: Dict, key: str, default: Any) -> Any:
+        """Extract a field value from OpenReview API v2 content.
+
+        OpenReview API v2 wraps every content field in a ``{"value": ...}``
+        object.  This helper unwraps the value transparently so the rest of
+        the code never has to deal with the wrapper dict.
+        """
+        val = content.get(key, default)
+        if isinstance(val, dict):
+            return val.get("value", default)
+        return val if val is not None else default
+
+    @staticmethod
+    def _extract_authors(authors_raw: Any) -> List[str]:
+        """Normalise an author list returned by OpenReview into plain strings."""
+        if not isinstance(authors_raw, list):
+            return []
+        result = []
+        for author in authors_raw:
+            if isinstance(author, dict):
+                result.append(author.get("name", ""))
+            else:
+                result.append(str(author))
+        return result
+
     async def search(
         self,
         query: str,
@@ -84,14 +110,16 @@ class OpenReviewSource(ConferenceSource):
             return []
 
         url = f"{OPENREVIEW_BASE_URL}/notes"
+        # Fetch a larger batch so client-side query filtering has enough
+        # candidates. The OpenReview /notes endpoint does not support
+        # full-text search, so we filter locally.  The multiplier of 5 (min 100)
+        # is a heuristic: assuming ~20 % keyword hit-rate we still fill the
+        # requested max_results most of the time without an unreasonably large
+        # server-side fetch.
         params = {
             "venueid": venue_id,
-            "limit": max_results * 2,
-            "details": "content",
+            "limit": max(max_results * 5, 100),
         }
-
-        if query:
-            params["q"] = f"(title:*{query}*) OR (abstract:*{query}*)"
 
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
@@ -99,7 +127,7 @@ class OpenReviewSource(ConferenceSource):
                 response.raise_for_status()
                 data = response.json()
 
-            papers = self._parse_papers(data.get("notes", []), conference, year)
+            papers = self._parse_papers(data.get("notes", []), conference, year, query)
             return papers[:max_results]
 
         except httpx.HTTPError as e:
@@ -110,32 +138,41 @@ class OpenReviewSource(ConferenceSource):
             return []
 
     def _parse_papers(
-        self, notes: List[Dict], conference: str, year: int
+        self, notes: List[Dict], conference: str, year: int, query: str = ""
     ) -> List[PaperMetadata]:
-        """Parse OpenReview notes into PaperMetadata."""
+        """Parse OpenReview notes into PaperMetadata.
+
+        OpenReview API v2 wraps every content field in ``{"value": ...}``.
+        This method extracts the actual values and optionally filters results
+        by the search query (title or abstract match).
+        """
         papers = []
+        query_lower = query.lower() if query else ""
+
         for note in notes:
             content = note.get("content", {})
 
-            title = content.get("title", "")
-            abstract = content.get("abstract", "")
+            title = self._get_content_value(content, "title", "")
+            abstract = self._get_content_value(content, "abstract", "")
 
-            authors = []
-            for author in content.get("authors", []):
-                if isinstance(author, dict):
-                    authors.append(author.get("name", ""))
-                else:
-                    authors.append(str(author))
+            # Client-side query filtering
+            if query_lower and (
+                query_lower not in title.lower()
+                and query_lower not in abstract.lower()
+            ):
+                continue
+
+            authors_raw = self._get_content_value(content, "authors", [])
+            authors = self._extract_authors(authors_raw)
 
             paper_id = note.get("id", "")
 
-            pdf_url = ""
-            for link in note.get("details", {}).get("pdf", {}).get("link", []):
-                if link.get("type") == "pdf":
-                    pdf_url = link.get("url", "")
-                    break
-
-            pdf_url = pdf_url or f"https://openreview.net/pdf?id={paper_id}"
+            # PDF path from content (API v2 stores it as a relative path)
+            pdf_rel = self._get_content_value(content, "pdf", "")
+            if pdf_rel:
+                pdf_url = f"https://openreview.net{pdf_rel}"
+            else:
+                pdf_url = f"https://openreview.net/pdf?id={paper_id}"
 
             forum_url = f"https://openreview.net/forum?id={paper_id}"
 
@@ -209,9 +246,14 @@ class OpenReviewSource(ConferenceSource):
             note = notes[0]
             content = note.get("content", {})
 
-            text_content = f"# {content.get('title', '')}\n\n"
-            text_content += f"**Authors:** {', '.join(content.get('authors', []))}\n\n"
-            text_content += f"**Abstract:** {content.get('abstract', '')}\n\n"
+            title = self._get_content_value(content, "title", "")
+            authors_raw = self._get_content_value(content, "authors", [])
+            authors = self._extract_authors(authors_raw)
+            abstract = self._get_content_value(content, "abstract", "")
+
+            text_content = f"# {title}\n\n"
+            text_content += f"**Authors:** {', '.join(authors)}\n\n"
+            text_content += f"**Abstract:** {abstract}\n\n"
 
             return {
                 "status": "success",
