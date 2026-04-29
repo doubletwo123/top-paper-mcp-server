@@ -14,10 +14,6 @@ MAX_RETRIES = 2
 from .conferences import (
     CVFSource,
     OpenReviewSource,
-    NeurIPSSource,
-    ICMLSource,
-    AAAISource,
-    IJCaiSource,
     ECCVSource,
     ACMSource,
     MLAnthologySource,
@@ -27,10 +23,6 @@ logger = logging.getLogger("top-paper-mcp-server")
 
 cvf_source = CVFSource()
 openreview_source = OpenReviewSource()
-neurips_source = NeurIPSSource()
-icml_source = ICMLSource()
-aaai_source = AAAISource()
-ijcai_source = IJCaiSource()
 eccv_source = ECCVSource()
 acm_source = ACMSource()
 mlanthology_source = MLAnthologySource()
@@ -107,7 +99,7 @@ AVAILABLE_CONFERENCES = {
     ],
     "ECVA": ["ECCV"],
     "ACM": ["ACM"],
-    "MLAnthology": ["NeurIPS", "ICML", "ICLR", "COLT", "UAI"],
+    "PMLR": ["COLT", "UAI"],
 }
 
 CONFERENCE_SOURCE_MAP = {
@@ -118,8 +110,8 @@ CONFERENCE_SOURCE_MAP = {
     "ICLR": "openreview",
     "NEURIPS": "openreview",
     "ICML": "openreview",
-    "AAAI": "aaai",
-    "IJCAI": "ijcai",
+    "AAAI": "openreview",
+    "IJCAI": "openreview",
     "ACL": "openreview",
     "EMNLP": "openreview",
     "NAACL": "openreview",
@@ -142,14 +134,6 @@ def _get_source(conference: str):
         return cvf_source
     elif source_type == "openreview":
         return openreview_source
-    elif source_type == "neurips":
-        return neurips_source
-    elif source_type == "icml":
-        return icml_source
-    elif source_type == "aaai":
-        return aaai_source
-    elif source_type == "ijcai":
-        return ijcai_source
     elif source_type == "eccv":
         return eccv_source
     elif source_type == "acm":
@@ -193,7 +177,7 @@ conference_search_tool = types.Tool(
             },
             "conference": {
                 "type": "string",
-                "description": "Conference name (e.g., CVPR, ICCV, WACV, ECCV, ICLR, NeurIPS, ICML, AAAI, IJCAI, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH)",
+                "description": "Conference name (e.g., CVPR, ICCV, WACV, ECCV, ICLR, NeurIPS, ICML, AAAI, IJCAI, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH, COLT, UAI)",
                 "enum": [
                     "CVPR",
                     "ICCV",
@@ -213,6 +197,8 @@ conference_search_tool = types.Tool(
                     "MICCAI",
                     "IWSLT",
                     "INTERSPEECH",
+                    "COLT",
+                    "UAI",
                     "ACM",
                 ],
             },

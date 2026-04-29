@@ -50,28 +50,16 @@ def mock_download_sources():
             MockDownloadSource("openreview"),
         ),
         patch(
-            "top_paper_mcp_server.tools.conference_download.neurips_source",
-            MockDownloadSource("neurips"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_download.icml_source",
-            MockDownloadSource("icml"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_download.aaai_source",
-            MockDownloadSource("aaai"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_download.ijcai_source",
-            MockDownloadSource("ijcai"),
-        ),
-        patch(
             "top_paper_mcp_server.tools.conference_download.eccv_source",
             MockDownloadSource("eccv"),
         ),
         patch(
             "top_paper_mcp_server.tools.conference_download.acm_source",
             MockDownloadSource("acm"),
+        ),
+        patch(
+            "top_paper_mcp_server.tools.conference_download.mlanthology_source",
+            MockDownloadSource("mlanthology"),
         ),
     ):
         yield
@@ -134,7 +122,7 @@ async def test_download_paper_not_found(mock_download_sources):
 @pytest.mark.asyncio
 async def test_download_various_conferences(mock_download_sources):
     """Test downloading from different conferences."""
-    conferences = ["CVPR", "ICCV", "WACV", "ICLR", "NEURIPS", "ICML", "ACL", "AAAI"]
+    conferences = ["CVPR", "ICCV", "WACV", "ICLR", "NEURIPS", "ICML", "ACL", "AAAI", "COLT", "UAI"]
 
     for conf in conferences:
         result = await handle_conference_download(

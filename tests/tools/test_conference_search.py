@@ -75,22 +75,6 @@ def mock_sources():
             MockConferenceSource("openreview"),
         ),
         patch(
-            "top_paper_mcp_server.tools.conference_search.neurips_source",
-            MockConferenceSource("neurips"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.icml_source",
-            MockConferenceSource("icml"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.aaai_source",
-            MockConferenceSource("aaai"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.ijcai_source",
-            MockConferenceSource("ijcai"),
-        ),
-        patch(
             "top_paper_mcp_server.tools.conference_search.eccv_source",
             MockConferenceSource("eccv"),
         ),
