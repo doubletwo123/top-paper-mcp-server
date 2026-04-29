@@ -4,9 +4,9 @@
 
 > 🔍 通过简单的 MCP 接口帮助 AI 助手搜索和获取来自 arXiv 及顶级学术会议的论文。
 
-Top Paper MCP Server 搭建了 AI 助手与学术研究资源（arXiv、CVPR、NeurIPS、ICLR、ICML 等）之间的桥梁，通过模型上下文协议（MCP）实现论文搜索和内容获取的编程方式访问。
+Top Paper MCP Server 搭建了 AI 助手与学术研究资源之间的桥梁，通过模型上下文协议（MCP）实现论文搜索和内容获取的编程方式访问。
 
-**这是 [arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server) 的分支，增加了更多会议支持和额外功能。**
+**这是 [arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server) 的分支，保留了完整的 arXiv 功能，并新增了扩展的会议搜索功能。**
 
 <div align="center">
   
