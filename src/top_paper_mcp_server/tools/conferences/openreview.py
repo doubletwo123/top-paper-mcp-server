@@ -157,8 +157,7 @@ class OpenReviewSource(ConferenceSource):
 
             # Client-side query filtering
             if query_lower and (
-                query_lower not in title.lower()
-                and query_lower not in abstract.lower()
+                query_lower not in title.lower() and query_lower not in abstract.lower()
             ):
                 continue
 
