@@ -86,11 +86,12 @@ class CVFSource(ConferenceSource):
             if query and query_lower not in title.lower():
                 continue
 
-            match = re.search(r"/content/(\w+\d+)/(\w+)\.html", href)
+            # CVF paper pages live under /content/<CONF<YEAR>/html/<id>.html
+            match = re.search(r"/content/\w+/html/(\w+)\.html", href)
             if not match:
                 continue
 
-            paper_id = match.group(2)
+            paper_id = match.group(1)
 
             authors_div = paper_div.find("div", class_="authors")
             authors_text = authors_div.get_text(strip=True) if authors_div else ""
@@ -101,7 +102,8 @@ class CVFSource(ConferenceSource):
             abstract_div = paper_div.find("div", class_="abstract")
             abstract = abstract_div.get_text(strip=True) if abstract_div else ""
 
-            pdf_url = href.replace(".html", ".pdf")
+            # PDFs live under /content/<CONF<YEAR>/papers/<id>.pdf
+            pdf_url = href.replace("/html/", "/papers/").replace(".html", ".pdf")
 
             papers.append(
                 PaperMetadata(
