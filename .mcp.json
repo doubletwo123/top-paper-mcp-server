@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "top-paper": {
+      "command": "uvx",
+      "args": ["top-paper-mcp-server"]
+    }
+  }
+}

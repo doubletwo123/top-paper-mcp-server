@@ -1,0 +1,60 @@
+{
+  "manifest_version": "0.3",
+  "name": "top-paper-mcp-server",
+  "display_name": "Top Paper MCP Server",
+  "version": "0.6.0",
+  "description": "Search, download, and analyze academic papers from arXiv and top conferences via MCP.",
+  "author": {
+    "name": "doubletwo123",
+    "email": "doubletwo123@example.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/doubletwo123/top-paper-mcp-server.git"
+  },
+  "homepage": "https://github.com/doubletwo123/top-paper-mcp-server",
+  "documentation": "https://github.com/doubletwo123/top-paper-mcp-server#readme",
+  "support": "https://github.com/doubletwo123/top-paper-mcp-server/issues",
+  "server": {
+    "type": "python",
+    "entry_point": "top_paper_mcp_server/__main__.py",
+    "mcp_config": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "top_paper_mcp_server",
+        "--storage-path",
+        "${user_config.storage_path}"
+      ]
+    }
+  },
+  "keywords": [
+    "arxiv",
+    "conference",
+    "neurips",
+    "icml",
+    "cvpr",
+    "iclr",
+    "research",
+    "papers",
+    "semantic-search",
+    "mcp"
+  ],
+  "license": "Apache-2.0",
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "linux", "win32"],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  },
+  "user_config": {
+    "storage_path": {
+      "type": "directory",
+      "title": "Paper Storage Directory",
+      "description": "Local directory for storing downloaded academic papers.",
+      "required": false,
+      "default": "${HOME}/.top-paper-mcp-server/papers"
+    }
+  }
+}

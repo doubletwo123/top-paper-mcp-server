@@ -1,0 +1,21 @@
+{
+  "name": "top-paper-mcp-server",
+  "version": "0.6.0",
+  "description": "Search academic papers from arXiv and top conferences (CVPR, NeurIPS, ICLR, ICML, etc.), download full text via MCP.",
+  "author": {
+    "name": "Top Paper MCP Team",
+    "url": "https://github.com/top-paper-mcp/top-paper-mcp-server"
+  },
+  "homepage": "https://github.com/top-paper-mcp/top-paper-mcp-server",
+  "repository": "https://github.com/top-paper-mcp/top-paper-mcp-server",
+  "keywords": ["mcp", "codex", "arxiv", "conference", "research", "academic", "neurips", "icml", "cvpr", "iclr"],
+  "mcpServers": "../.mcp.json",
+  "skills": "../skills/",
+  "interface": {
+    "displayName": "Top Paper MCP Server",
+    "shortDescription": "Search and analyze academic papers from top conferences.",
+    "longDescription": "Adds paper search and download capabilities from arXiv and top AI/ML/CV conferences (CVPR, ICCV, NeurIPS, ICLR, ICML, AAAI, IJCAI, ECCV) to Codex-compatible MCP clients.",
+    "category": "Research",
+    "websiteURL": "https://github.com/top-paper-mcp/top-paper-mcp-server"
+  }
+}
