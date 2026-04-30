@@ -604,7 +604,7 @@ class TestMLAnthologySource:
         volume = PMLR_VOLUME_MAP[("COLT", 2024)]
         expected_url = f"https://proceedings.mlr.press/v{volume}/"
         assert expected_url in captured_urls
-        assert not any(url.startswith("https://proceedings.neurips.cc") for url in captured_urls)
+        assert all(url == expected_url for url in captured_urls)
 
     @pytest.mark.asyncio
     async def test_search_returns_empty_for_unknown_year(self):

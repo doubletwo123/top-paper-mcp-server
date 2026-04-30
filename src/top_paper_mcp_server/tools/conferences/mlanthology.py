@@ -41,6 +41,10 @@ VENUE_MAP = {
     "UAI": "UAI",
 }
 
+# Maximum number of characters used when generating a fallback paper ID slug
+# from a paper title (when the abs link href is not available).
+MAX_SLUG_CHARS = 40
+
 
 class MLAnthologySource(ConferenceSource):
     """PMLR paper source for COLT and UAI conferences."""
@@ -158,12 +162,9 @@ class MLAnthologySource(ConferenceSource):
                 if m:
                     paper_id = m.group(1)
 
-            # Maximum number of characters used when generating a fallback slug
-            _MAX_SLUG_CHARS = 40
-
             if not paper_id:
                 # Fallback: generate a slug from the title
-                paper_id = re.sub(r"\W+", "_", title[:_MAX_SLUG_CHARS]).strip("_").lower()
+                paper_id = re.sub(r"\W+", "_", title[:MAX_SLUG_CHARS]).strip("_").lower()
 
             authors: List[str] = []
             details = paper_div.find("p", class_="details")
