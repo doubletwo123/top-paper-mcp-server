@@ -508,20 +508,19 @@ async def handle_search(arguments: Dict[str, Any]) -> List[types.TextContent]:
         # Add base query with optimization
         if base_query.strip():
             optimized_query = _optimize_query(base_query)
-            
+
             # Check if query already has field specifiers
             has_field_specifier = any(
-                field in optimized_query
-                for field in ["ti:", "au:", "abs:", "cat:"]
+                field in optimized_query for field in ["ti:", "au:", "abs:", "cat:"]
             )
-            
+
             if has_field_specifier:
                 # Keep user's original field specification
                 query_parts.append(f"({optimized_query})")
             else:
                 # Search all fields (title, abstract, authors, etc.)
                 query_parts.append(f"(all:{optimized_query})")
-            
+
             if optimized_query != base_query:
                 logger.debug(f"Optimized query: '{base_query}' -> '{optimized_query}'")
 

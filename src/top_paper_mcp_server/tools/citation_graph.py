@@ -80,12 +80,15 @@ async def handle_citation_graph(arguments: Dict[str, Any]) -> List[types.TextCon
                 response = await client.get(url)
 
             if response.status_code == 429:
-                wait_time = 2 ** attempt
+                wait_time = 2**attempt
                 logger.warning(
                     "Semantic Scholar rate limited (429), retrying in %ds (attempt %d/%d)",
-                    wait_time, attempt + 1, max_retries,
+                    wait_time,
+                    attempt + 1,
+                    max_retries,
                 )
                 import asyncio
+
                 await asyncio.sleep(wait_time)
                 continue
 
