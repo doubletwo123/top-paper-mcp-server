@@ -251,8 +251,8 @@ class TestCVFSource:
         papers = self.source._parse_paper_list(
             CVF_MOCK_HTML, "CVPR", 2024, "object detection", 10
         )
-        assert "openaccess.thecvf.com" in papers[0].url
-        assert "Wang_Object_Detection_CVPR_2024_paper" in papers[0].url
+        expected_url = "https://openaccess.thecvf.com/content/CVPR2024/html/Wang_Object_Detection_CVPR_2024_paper.html"
+        assert papers[0].url == expected_url
 
     def test_parse_builds_correct_pdf_url(self):
         papers = self.source._parse_paper_list(
@@ -298,8 +298,7 @@ class TestCVFSource:
             papers = await self.source.search("object detection", "CVPR", 2024, 5)
 
         assert len(captured_urls) == 1
-        assert "openaccess.thecvf.com" in captured_urls[0]
-        assert "CVPR2024" in captured_urls[0]
+        assert captured_urls[0] == "https://openaccess.thecvf.com/CVPR2024"
 
     @pytest.mark.asyncio
     async def test_eccv_search_uses_cvf_url(self):
@@ -325,9 +324,7 @@ class TestCVFSource:
             papers = await self.source.search("detection", "ECCV", 2024, 5)
 
         assert len(captured_urls) == 1
-        assert "openaccess.thecvf.com" in captured_urls[0]
-        assert "ECCV2024" in captured_urls[0]
-        assert "ecva.net" not in captured_urls[0]
+        assert captured_urls[0] == "https://openaccess.thecvf.com/ECCV2024"
 
 
 # ---------------------------------------------------------------------------
@@ -385,7 +382,7 @@ class TestOpenReviewSource:
         papers = self.source._parse_papers(
             OPENREVIEW_MOCK_RESPONSE["notes"], "ICLR", 2024, ""
         )
-        assert "openreview.net/forum" in papers[0].url
+        assert papers[0].url.startswith("https://openreview.net/forum")
 
     def test_get_content_value_unwraps_value_dict(self):
         content = {"title": {"value": "Test Title"}}
@@ -507,7 +504,7 @@ class TestIJCAISource:
 
     def test_parse_extracts_pdf_url(self):
         papers = self.source._parse_paper_list(IJCAI_MOCK_HTML, 2024, "", 10)
-        assert "ijcai.org" in papers[0].pdf_url
+        assert papers[0].pdf_url.startswith("https://www.ijcai.org/proceedings/")
         assert papers[0].pdf_url.endswith(".pdf")
 
 
@@ -542,7 +539,7 @@ class TestMLAnthologySource:
             PMLR_MOCK_HTML, "COLT", 2024, "learning", 10
         )
         # "PAC Learning" and "Online Learning" both match "learning"
-        assert len(papers) >= 2
+        assert len(papers) == 2
 
     def test_parse_returns_all_papers_empty_query(self):
         papers = self.source._parse_paper_list(PMLR_MOCK_HTML, "COLT", 2024, "", 10)
@@ -562,7 +559,7 @@ class TestMLAnthologySource:
 
     def test_parse_builds_pmlr_pdf_url(self):
         papers = self.source._parse_paper_list(PMLR_MOCK_HTML, "COLT", 2024, "", 10)
-        assert "proceedings.mlr.press" in papers[0].pdf_url
+        assert papers[0].pdf_url.startswith("https://proceedings.mlr.press/")
         assert papers[0].pdf_url.endswith(".pdf")
 
     def test_pmlr_base_url_is_correct(self):
@@ -603,12 +600,11 @@ class TestMLAnthologySource:
 
             papers = await self.source.search("learning", "COLT", 2024, 5)
 
-        # Should fetch the PMLR volume page
-        assert any("proceedings.mlr.press" in url for url in captured_urls)
-        assert not any("neurips.cc" in url for url in captured_urls)
-        # Should use the correct volume number for COLT 2024 (v247)
+        # Should fetch exactly the PMLR volume page for COLT 2024 (v247)
         volume = PMLR_VOLUME_MAP[("COLT", 2024)]
-        assert any(f"v{volume}" in url for url in captured_urls)
+        expected_url = f"https://proceedings.mlr.press/v{volume}/"
+        assert expected_url in captured_urls
+        assert not any(url.startswith("https://proceedings.neurips.cc") for url in captured_urls)
 
     @pytest.mark.asyncio
     async def test_search_returns_empty_for_unknown_year(self):
@@ -712,7 +708,7 @@ class TestHandlerWithMockedSources:
         assert data["total_results"] == 1
         assert data["conference"] == "CVPR"
         assert "Object Detection" in data["papers"][0]["title"]
-        assert "openaccess.thecvf.com" in data["papers"][0]["url"]
+        assert data["papers"][0]["url"] == "https://openaccess.thecvf.com/content/CVPR2024/html/Wang_Object_Detection_CVPR_2024_paper.html"
 
     @pytest.mark.asyncio
     async def test_eccv_search_uses_cvf_source(self):
@@ -776,7 +772,7 @@ class TestHandlerWithMockedSources:
 
         data = json.loads(result[0].text)
         assert data["total_results"] == 1
-        assert "openreview.net" in data["papers"][0]["url"]
+        assert data["papers"][0]["url"] == "https://openreview.net/forum?id=abc123"
 
     @pytest.mark.asyncio
     async def test_no_results_returns_friendly_message(self):

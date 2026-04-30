@@ -91,7 +91,7 @@ class MLAnthologySource(ConferenceSource):
     ) -> List[PaperMetadata]:
         """Search papers in a PMLR-hosted conference."""
         conf_upper = conference.upper()
-        if conf_upper not in (k.upper() for k in VENUE_MAP):
+        if conf_upper not in VENUE_MAP:
             logger.warning(f"Unknown conference for PMLR source: {conference}")
             return []
 
@@ -158,9 +158,12 @@ class MLAnthologySource(ConferenceSource):
                 if m:
                     paper_id = m.group(1)
 
+            # Maximum number of characters used when generating a fallback slug
+            _MAX_SLUG_CHARS = 40
+
             if not paper_id:
                 # Fallback: generate a slug from the title
-                paper_id = re.sub(r"\W+", "_", title[:40]).strip("_").lower()
+                paper_id = re.sub(r"\W+", "_", title[:_MAX_SLUG_CHARS]).strip("_").lower()
 
             authors: List[str] = []
             details = paper_div.find("p", class_="details")
