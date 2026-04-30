@@ -10,7 +10,7 @@ from pydantic import AnyUrl
 import mcp.types as types
 from ..config import Settings
 
-logger = logging.getLogger("arxiv-mcp-server")
+logger = logging.getLogger("top-paper-mcp-server")
 
 
 class PaperManager:

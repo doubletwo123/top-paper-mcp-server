@@ -33,8 +33,6 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
   - **CVF**: CVPR, ICCV, WACV
   - **ECVA**: ECCV
   - **OpenReview**: ICLR, NeurIPS, ICML, AAAI, IJCAI, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH
-  - **ML Anthology**: COLT, UAI
-  - **ACM**: ACM Digital Library (SIGGRAPH, CHI, KDD, etc.)
 - 📄 **Paper Download**: Download papers from conference websites
 - 📝 **Prompts**: Research prompts for paper analysis
 
@@ -64,11 +62,6 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 | INTERSPEECH | OpenReview API | 2000-present |
 | IWSLT | OpenReview API | 2000-present |
 | MICCAI | OpenReview API | 2000-present |
-| **Theory** |
-| COLT | ML Anthology | 2000-present |
-| UAI | ML Anthology | 2000-present |
-| **Other** |
-| ACM | ACM Digital Library | Varies |
 
 ## 🚀 Quick Start
 

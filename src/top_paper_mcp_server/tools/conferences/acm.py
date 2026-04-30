@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from bs4 import BeautifulSoup
 from .base import ConferenceSource, PaperMetadata
 
-logger = logging.getLogger("arxiv-mcp-server")
+logger = logging.getLogger("top-paper-mcp-server")
 
 ACM_BASE_URL = "https://dl.acm.org"
 
@@ -60,7 +60,7 @@ class ACMSource(ConferenceSource):
             async with httpx.AsyncClient(
                 timeout=30.0,
                 follow_redirects=True,
-                headers={"User-Agent": "arxiv-mcp-server/0.5.0 (research tool)"},
+                headers={"User-Agent": "top-paper-mcp-server/0.5.0 (research tool)"},
             ) as client:
                 response = await client.get(search_url, params=params)
 
@@ -145,7 +145,7 @@ class ACMSource(ConferenceSource):
         try:
             async with httpx.AsyncClient(
                 timeout=30.0,
-                headers={"User-Agent": "arxiv-mcp-server/0.5.0 (research tool)"},
+                headers={"User-Agent": "top-paper-mcp-server/0.5.0 (research tool)"},
             ) as client:
                 response = await client.get(url)
                 if response.status_code == 200:

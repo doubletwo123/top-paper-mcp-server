@@ -51,7 +51,7 @@ from .prompts.handlers import list_prompts as handler_list_prompts
 from .prompts.handlers import get_prompt as handler_get_prompt
 
 settings = Settings()
-logger = logging.getLogger("arxiv-mcp-server")
+logger = logging.getLogger("top-paper-mcp-server")
 logger.setLevel(logging.INFO)
 server = Server(settings.APP_NAME)
 

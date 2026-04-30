@@ -10,7 +10,7 @@ from urllib.parse import quote
 import httpx
 import mcp.types as types
 
-logger = logging.getLogger("arxiv-mcp-server")
+logger = logging.getLogger("top-paper-mcp-server")
 
 SEMANTIC_SCHOLAR_BASE_URL = "https://api.semanticscholar.org/graph/v1/paper"
 
@@ -73,9 +73,32 @@ async def handle_citation_graph(arguments: Dict[str, Any]) -> List[types.TextCon
 
         url = f"{SEMANTIC_SCHOLAR_BASE_URL}/{s2_paper_identifier}?fields={fields}"
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url)
+        max_retries = 3
+        response = None
+        for attempt in range(max_retries):
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url)
+
+            if response.status_code == 429:
+                wait_time = 2 ** attempt
+                logger.warning(
+                    "Semantic Scholar rate limited (429), retrying in %ds (attempt %d/%d)",
+                    wait_time, attempt + 1, max_retries,
+                )
+                import asyncio
+                await asyncio.sleep(wait_time)
+                continue
+
             response.raise_for_status()
+            break
+
+        if response is None or response.status_code == 429:
+            return [
+                types.TextContent(
+                    type="text",
+                    text="Error: Semantic Scholar API rate limited. Please try again later.",
+                )
+            ]
 
         payload = response.json()
         citations = _normalize_paper_items(payload.get("citations", []))

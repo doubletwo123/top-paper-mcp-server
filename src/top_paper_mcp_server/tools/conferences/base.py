@@ -20,6 +20,7 @@ class PaperMetadata:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "paper_id": self.paper_id,
             "id": self.paper_id,
             "title": self.title,
             "authors": self.authors,
