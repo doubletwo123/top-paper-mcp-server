@@ -31,7 +31,7 @@ class CVFSource(ConferenceSource):
 
     @property
     def conferences(self) -> List[str]:
-        return ["CVPR", "ICCV", "WACV"]
+        return ["CVPR", "ICCV", "WACV", "ECCV"]
 
     def _get_conf_year(self, conference: str, year: int) -> str:
         """Get conference-year folder name."""
