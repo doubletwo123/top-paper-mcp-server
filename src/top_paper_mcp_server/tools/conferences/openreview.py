@@ -10,6 +10,8 @@ from .base import ConferenceSource, PaperMetadata
 logger = logging.getLogger("top-paper-mcp-server")
 
 OPENREVIEW_BASE_URL = "https://api2.openreview.net"
+INVITATION_SUFFIXES = ["/-/Submission", "/-/Blind_Submission", "/-/Paper"]
+MAX_QUERY_LIMIT = 200
 
 
 def _generate_venue_ids():
@@ -105,29 +107,29 @@ class OpenReviewSource(ConferenceSource):
             return []
 
         try:
-            if query:
-                url = f"{OPENREVIEW_BASE_URL}/notes/search"
-                params = {
-                    "query": query,
-                    "source": "forum",
-                    "limit": max_results,
-                    "group": venue_id,
-                }
-            else:
-                url = f"{OPENREVIEW_BASE_URL}/notes"
-                invitation = f"{venue_id}/-/Submission"
-                params = {
-                    "invitation": invitation,
-                    "limit": max_results,
-                    "details": "content",
-                }
+            notes: List[Dict[str, Any]] = []
+            limit = (
+                min(max_results * 5, MAX_QUERY_LIMIT) if query else max_results
+            )
 
             async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
+                for suffix in INVITATION_SUFFIXES:
+                    invitation = f"{venue_id}{suffix}"
+                    url = f"{OPENREVIEW_BASE_URL}/notes"
+                    params = {
+                        "invitation": invitation,
+                        "limit": limit,
+                        "details": "content",
+                    }
+                    response = await client.get(url, params=params)
+                    if response.status_code != 200:
+                        continue
+                    data = response.json()
+                    notes = data.get("notes", [])
+                    if notes:
+                        break
 
-            papers = self._parse_papers(data.get("notes", []), conference, year)
+            papers = self._parse_papers(notes, conference, year, query=query)
             return papers[:max_results]
 
         except httpx.HTTPError as e:
@@ -138,15 +140,23 @@ class OpenReviewSource(ConferenceSource):
             return []
 
     def _parse_papers(
-        self, notes: List[Dict], conference: str, year: int
+        self, notes: List[Dict], conference: str, year: int, query: str = ""
     ) -> List[PaperMetadata]:
         """Parse OpenReview notes into PaperMetadata."""
         papers = []
+        query_lower = query.lower()
         for note in notes:
             content = note.get("content", {})
 
             title = _extract_content_value(content.get("title", ""))
             abstract = _extract_content_value(content.get("abstract", ""))
+
+            title_text = str(title)
+            abstract_text = str(abstract)
+            if query_lower:
+                combined = f"{title_text} {abstract_text}".lower()
+                if query_lower not in combined:
+                    continue
 
             authors_raw = _extract_content_value(content.get("authors", []))
             authors = []
@@ -167,9 +177,9 @@ class OpenReviewSource(ConferenceSource):
             papers.append(
                 PaperMetadata(
                     paper_id=paper_id,
-                    title=str(title),
+                    title=title_text,
                     authors=authors,
-                    abstract=str(abstract),
+                    abstract=abstract_text,
                     year=year,
                     conference=conference.upper(),
                     url=forum_url,

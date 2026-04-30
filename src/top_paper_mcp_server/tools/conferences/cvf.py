@@ -75,6 +75,74 @@ class CVFSource(ConferenceSource):
         papers = []
         query_lower = query.lower()
 
+        def _matches_query(title_text: str, abstract_text: str) -> bool:
+            if not query_lower:
+                return True
+            combined = f"{title_text} {abstract_text}".lower()
+            return query_lower in combined
+
+        for title_dt in soup.find_all("dt", class_="ptitle"):
+            title_link = title_dt.find("a", href=True)
+            if not title_link:
+                continue
+
+            title = title_link.get_text(strip=True)
+            href = title_link["href"]
+
+            paper_dd = title_dt.find_next_sibling("dd")
+            authors = []
+            abstract = ""
+            if paper_dd:
+                authors_div = paper_dd.find("div", class_="authors")
+                authors_text = (
+                    authors_div.get_text(strip=True) if authors_div else ""
+                )
+                authors = (
+                    [a.strip() for a in authors_text.split(",")]
+                    if authors_text
+                    else []
+                )
+
+                abstract_div = paper_dd.find("div", class_="abstract")
+                abstract = abstract_div.get_text(strip=True) if abstract_div else ""
+
+            if not _matches_query(title, abstract):
+                continue
+
+            paper_id = ""
+            match = re.search(r"/content/[^/]+/html/([^/]+)\.html", href)
+            if match:
+                paper_id = match.group(1)
+            else:
+                paper_id = href.rsplit("/", 1)[-1].split(".")[0]
+
+            if not paper_id:
+                continue
+
+            pdf_href = href
+            if "/html/" in pdf_href:
+                pdf_href = pdf_href.replace("/html/", "/papers/")
+            pdf_href = pdf_href.replace(".html", ".pdf")
+
+            papers.append(
+                PaperMetadata(
+                    paper_id=paper_id,
+                    title=title,
+                    authors=authors,
+                    abstract=abstract,
+                    year=year,
+                    conference=conference.upper(),
+                    url=f"{CVF_BASE_URL}{href}",
+                    pdf_url=f"{CVF_BASE_URL}{pdf_href}",
+                )
+            )
+
+            if len(papers) >= max_results:
+                break
+
+        if papers:
+            return papers
+
         for paper_div in soup.find_all("dd"):
             title_link = paper_div.find("a", href=True)
             if not title_link:
@@ -82,15 +150,6 @@ class CVFSource(ConferenceSource):
 
             title = title_link.get_text(strip=True)
             href = title_link["href"]
-
-            if query and query_lower not in title.lower():
-                continue
-
-            match = re.search(r"/content/(\w+\d+)/(\w+)\.html", href)
-            if not match:
-                continue
-
-            paper_id = match.group(2)
 
             authors_div = paper_div.find("div", class_="authors")
             authors_text = authors_div.get_text(strip=True) if authors_div else ""
@@ -100,6 +159,15 @@ class CVFSource(ConferenceSource):
 
             abstract_div = paper_div.find("div", class_="abstract")
             abstract = abstract_div.get_text(strip=True) if abstract_div else ""
+
+            if not _matches_query(title, abstract):
+                continue
+
+            match = re.search(r"/content/(\w+\d+)/(\w+)\.html", href)
+            if not match:
+                continue
+
+            paper_id = match.group(2)
 
             pdf_url = href.replace(".html", ".pdf")
 

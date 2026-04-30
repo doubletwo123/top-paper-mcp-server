@@ -32,7 +32,12 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 - 🔎 **Conference Search**: Search papers from top AI/ML/CV/NLP conferences:
   - **CVF**: CVPR, ICCV, WACV
   - **ECVA**: ECCV
-  - **OpenReview**: ICLR, NeurIPS, ICML, AAAI, IJCAI, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH
+  - **OpenReview**: ICLR, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH
+  - **NeurIPS**: NeurIPS (official virtual site)
+  - **ICML**: ICML (official virtual site)
+  - **AAAI**: AAAI (OJS proceedings)
+  - **IJCAI**: IJCAI (official proceedings)
+  - **PMLR**: COLT, UAI
 - 📄 **Paper Download**: Download papers from conference websites
 - 📝 **Prompts**: Research prompts for paper analysis
 
@@ -47,13 +52,16 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 | ECCV | ECVA | 2000-present |
 | **Machine Learning / AI** |
 | ICLR | OpenReview API | 2000-present |
-| NeurIPS | OpenReview API | 2000-present |
-| ICML | OpenReview API | 2000-present |
-| AAAI | OpenReview API | 2000-present |
-| IJCAI | OpenReview API | 2000-present |
+| NeurIPS | NeurIPS Virtual Site | 2020-present |
+| ICML | ICML Virtual Site | 2020-present |
+| AAAI | AAAI OJS | 2000-present |
+| IJCAI | IJCAI Proceedings | 2000-present |
 | COLM | OpenReview API | 2000-present |
 | CoRL | OpenReview API | 2000-present |
 | MLSYS | OpenReview API | 2020-present |
+| **Theory** |
+| COLT | PMLR | 2000-present |
+| UAI | PMLR | 2000-present |
 | **NLP** |
 | ACL | OpenReview API | 2000-present |
 | EMNLP | OpenReview API | 2000-present |

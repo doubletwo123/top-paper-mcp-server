@@ -89,12 +89,9 @@ CATEGORY_PRIORITY = {
 
 AVAILABLE_CONFERENCES = {
     "CVF": ["CVPR", "ICCV", "WACV"],
+    "ECVA": ["ECCV"],
     "OpenReview": [
         "ICLR",
-        "NeurIPS",
-        "ICML",
-        "AAAI",
-        "IJCAI",
         "ACL",
         "EMNLP",
         "NAACL",
@@ -105,9 +102,12 @@ AVAILABLE_CONFERENCES = {
         "IWSLT",
         "INTERSPEECH",
     ],
-    "ECVA": ["ECCV"],
+    "NeurIPS": ["NeurIPS"],
+    "ICML": ["ICML"],
+    "AAAI": ["AAAI"],
+    "IJCAI": ["IJCAI"],
+    "MLAnthology": ["COLT", "UAI"],
     "ACM": ["ACM"],
-    "MLAnthology": ["NeurIPS", "ICML", "ICLR", "COLT", "UAI"],
 }
 
 CONFERENCE_SOURCE_MAP = {
@@ -116,10 +116,10 @@ CONFERENCE_SOURCE_MAP = {
     "WACV": "cvf",
     "ECCV": "eccv",
     "ICLR": "openreview",
-    "NEURIPS": "openreview",
-    "ICML": "openreview",
-    "AAAI": "openreview",
-    "IJCAI": "openreview",
+    "NEURIPS": "neurips",
+    "ICML": "icml",
+    "AAAI": "aaai",
+    "IJCAI": "ijcai",
     "ACL": "openreview",
     "EMNLP": "openreview",
     "NAACL": "openreview",
