@@ -1,5 +1,6 @@
 """PMLR (Proceedings of Machine Learning Research) paper source."""
 
+import asyncio
 import re
 import httpx
 import logging
@@ -22,6 +23,7 @@ class MLAnthologySource(ConferenceSource):
     def __init__(self) -> None:
         self._volume_index: Dict[Tuple[str, int], str] = {}
         self._index_loaded = False
+        self._index_lock = asyncio.Lock()
 
     @property
     def name(self) -> str:
@@ -78,45 +80,48 @@ class MLAnthologySource(ConferenceSource):
     async def _load_volume_index(self) -> None:
         if self._index_loaded:
             return
-        self._index_loaded = True
+        async with self._index_lock:
+            if self._index_loaded:
+                return
+            self._index_loaded = True
 
-        try:
-            async with httpx.AsyncClient(
-                timeout=30.0,
-                follow_redirects=True,
-                headers={"User-Agent": "top-paper-mcp-server/0.5.0 (research tool)"},
-            ) as client:
-                response = await client.get(PMLR_BASE_URL)
-                response.raise_for_status()
-        except Exception as e:
-            logger.error(f"Failed to load PMLR index: {e}")
-            return
+            try:
+                async with httpx.AsyncClient(
+                    timeout=30.0,
+                    follow_redirects=True,
+                    headers={"User-Agent": "top-paper-mcp-server/0.5.0 (research tool)"},
+                ) as client:
+                    response = await client.get(PMLR_BASE_URL)
+                    response.raise_for_status()
+            except Exception as e:
+                logger.error(f"Failed to load PMLR index: {e}")
+                return
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        for link in soup.find_all("a", href=True):
-            href = link["href"]
-            volume_match = re.search(r"/v(\d+)/", href)
-            if not volume_match:
-                continue
-            volume = volume_match.group(1)
+            soup = BeautifulSoup(response.text, "html.parser")
+            for link in soup.find_all("a", href=True):
+                href = link["href"]
+                volume_match = re.search(r"/v(\d+)/", href)
+                if not volume_match:
+                    continue
+                volume = volume_match.group(1)
 
-            text_parts = [link.get_text(" ", strip=True)]
-            parent = link.find_parent(["li", "div", "p"])
-            if parent:
-                text_parts.append(parent.get_text(" ", strip=True))
-            text = " ".join(part for part in text_parts if part)
-            if not text:
-                continue
+                text_parts = [link.get_text(" ", strip=True)]
+                parent = link.find_parent(["li", "div", "p"])
+                if parent:
+                    text_parts.append(parent.get_text(" ", strip=True))
+                text = " ".join(part for part in text_parts if part)
+                if not text:
+                    continue
 
-            year_match = re.search(r"\b(20\d{2})\b", text)
-            if not year_match:
-                continue
-            year = int(year_match.group(1))
+                year_match = re.search(r"\b(20\d{2})\b", text)
+                if not year_match:
+                    continue
+                year = int(year_match.group(1))
 
-            text_lower = text.lower()
-            for conf, keywords in VENUE_KEYWORDS.items():
-                if any(keyword.lower() in text_lower for keyword in keywords):
-                    self._volume_index.setdefault((conf, year), volume)
+                text_lower = text.lower()
+                for conf, keywords in VENUE_KEYWORDS.items():
+                    if any(keyword.lower() in text_lower for keyword in keywords):
+                        self._volume_index.setdefault((conf, year), volume)
 
     def _parse_paper_list(
         self,

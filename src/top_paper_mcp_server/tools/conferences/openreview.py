@@ -11,6 +11,7 @@ logger = logging.getLogger("top-paper-mcp-server")
 
 OPENREVIEW_BASE_URL = "https://api2.openreview.net"
 INVITATION_SUFFIXES = ["/-/Submission", "/-/Blind_Submission", "/-/Paper"]
+QUERY_RESULT_MULTIPLIER = 5
 MAX_QUERY_LIMIT = 200
 
 
@@ -109,7 +110,9 @@ class OpenReviewSource(ConferenceSource):
         try:
             notes: List[Dict[str, Any]] = []
             limit = (
-                min(max_results * 5, MAX_QUERY_LIMIT) if query else max_results
+                min(max_results * QUERY_RESULT_MULTIPLIER, MAX_QUERY_LIMIT)
+                if query
+                else max_results
             )
 
             async with httpx.AsyncClient(timeout=60.0) as client:
