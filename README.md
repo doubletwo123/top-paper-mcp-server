@@ -35,6 +35,10 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 - 📄 **Conference Download**: Download papers via OpenReview API with arXiv fallback
 - 📝 **Prompts**: Research prompts for paper analysis
 
+### HuggingFace Integration
+- 📊 **Daily Papers**: Fetch trending papers curated by the HuggingFace community each day
+- 🪞 **Metadata Mirror**: Fallback metadata source when arXiv API is congested (provides title, abstract, authors, upvotes, AI summary, GitHub links)
+
 ## Supported Conferences
 
 All conferences are searched via **dual-path**: arXiv (content) + OpenReview (conference metadata) in parallel.
@@ -226,6 +230,18 @@ result = await call_tool("conference_download", {
 - **Concurrent Execution**: Searches multiple conferences in parallel using asyncio with semaphore (max 10)
 - **Timeout Protection**: Individual requests timeout after 30 seconds
 - **Automatic Retry**: Failed requests retry up to 2 times with exponential backoff
+
+### HuggingFace Tools
+
+```python
+# Fetch HuggingFace daily papers (trending papers curated by HF community)
+result = await call_tool("hf_daily_papers", {
+    "date": "2024-01-15",    # optional, defaults to today
+    "max_results": 20        # optional, default 20, max 100
+})
+```
+
+HuggingFace integration also provides a metadata mirror for arXiv papers — when the arXiv API is congested, paper metadata (title, abstract, authors, upvotes, AI summary, GitHub links) can be fetched from HuggingFace's paper API as a fallback.
 
 ## ⚙️ Configuration
 

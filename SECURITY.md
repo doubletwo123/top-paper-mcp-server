@@ -6,17 +6,14 @@ Only the current release is actively supported with security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.3.2   | :white_check_mark: |
-| < 0.3.2 | :x:                |
+| latest  | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in arxiv-mcp-server, please report it by
-sending an email to:
+If you discover a security vulnerability in top-paper-mcp-server, please report it by
+opening a private security advisory on GitHub:
 
-  joe.blazick@yahoo.com
-
-Subject line: SECURITY: arxiv-mcp-server
+  https://github.com/doubletwo123/top-paper-mcp-server/security/advisories/new
 
 Please include a description of the issue, steps to reproduce, and any relevant
 details about your environment. Do not open a public GitHub issue for security
@@ -30,10 +27,10 @@ and addressed as quickly as possible.
 
 ### Prompt Injection via Paper Content
 
-arXiv papers are user-generated, untrusted content. A maliciously crafted paper
-could contain text designed to manipulate an AI assistant's behavior (prompt
-injection). When this server returns paper content to an AI model, that content
-should be treated as untrusted input.
+Papers from arXiv, OpenReview, and HuggingFace are user-generated, untrusted content.
+A maliciously crafted paper could contain text designed to manipulate an AI assistant's
+behavior (prompt injection). When this server returns paper content to an AI model,
+that content should be treated as untrusted input.
 
 Mitigations to consider:
 - Run the MCP server in a sandboxed environment in production deployments.
@@ -43,3 +40,8 @@ Mitigations to consider:
 
 This risk is inherent to any system that feeds external, user-generated text to
 an AI model and cannot be fully eliminated by this server alone.
+
+---
+
+This project is a fork of [arxiv-mcp-server](https://github.com/blazickjp/arxiv-mcp-server)
+by Joseph Blazick. The original security considerations remain applicable.

@@ -25,6 +25,7 @@ from .conference_search import (
     handle_unified_search,
 )
 from .conference_download import conference_download_tool, handle_conference_download
+from .huggingface import hf_daily_papers_tool, handle_hf_daily_papers
 
 __all__ = [
     "search_tool",
@@ -53,4 +54,6 @@ __all__ = [
     "handle_unified_search",
     "conference_download_tool",
     "handle_conference_download",
+    "hf_daily_papers_tool",
+    "handle_hf_daily_papers",
 ]
