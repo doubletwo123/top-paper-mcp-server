@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "top-paper-mcp-server"
-version = "0.6.0"
-description = "A flexible academic paper search and analysis service for top conferences with MCP protocol support"
+version = "0.7.0"
+description = "MCP server for academic paper search across arXiv, 18+ top conferences, and HuggingFace. Features smart search with query expansion, lightweight RL preference learning, and related paper discovery via Semantic Scholar."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }

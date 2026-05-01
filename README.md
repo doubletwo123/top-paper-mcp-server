@@ -39,6 +39,12 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 - 📊 **Daily Papers**: Fetch trending papers curated by the HuggingFace community each day
 - 🪞 **Metadata Mirror**: Fallback metadata source when arXiv API is congested (provides title, abstract, authors, upvotes, AI summary, GitHub links)
 
+### Smart Search & Learning
+- 🧠 **Query Expansion**: Automatically expands queries into multiple variants and runs them in parallel
+- 🔗 **RRF Fusion**: Merges results from multiple query variants using Reciprocal Rank Fusion
+- 📈 **Preference Learning**: Lightweight RL (Contextual Bandit) that learns from user interactions — which expansion terms lead to useful results
+- 🎯 **Personalized Re-ranking**: Results improve over time as the system learns your research preferences
+
 ## Supported Conferences
 
 All conferences are searched via **dual-path**: arXiv (content) + OpenReview (conference metadata) in parallel.
@@ -243,6 +249,82 @@ result = await call_tool("hf_daily_papers", {
 
 HuggingFace integration also provides a metadata mirror for arXiv papers — when the arXiv API is congested, paper metadata (title, abstract, authors, upvotes, AI summary, GitHub links) can be fetched from HuggingFace's paper API as a fallback.
 
+### Smart Search Tools
+
+```python
+# Smart search with automatic query expansion
+result = await call_tool("smart_search", {
+    "query": "register",
+    "conference": "CVPR",     # optional
+    "year": 2025,             # optional
+    "max_results": 10,
+    "expand": true            # enable/disable expansion (default: true)
+})
+
+# LLM pre-expanded queries (let the LLM generate expansion terms)
+result = await call_tool("smart_search", {
+    "query": "register",
+    "queries": [
+        "register tokens vision transformer",
+        "learnable register tokens",
+        "registration point cloud"
+    ],
+    "conference": "CVPR",
+    "year": 2025
+})
+
+# Record feedback to improve future searches
+await call_tool("record_feedback", {
+    "paper_id": "2506.08010",
+    "action": "download"      # or "read"
+})
+```
+
+#### Smart Search Architecture
+
+- **Query Expansion**: Generates multiple query variants (original + bigrams + academic suffixes), or accepts LLM pre-expanded queries
+- **Parallel Execution**: All expanded queries run concurrently via `asyncio.gather`
+- **RRF Fusion**: Results merged using Reciprocal Rank Fusion (`score = Σ 1/(k+rank)`, k=20)
+- **Fuzzy Dedup**: Papers matched by Jaccard word overlap (>0.7) to handle title variations
+- **Preference Memory**: Stores term weights in `~/.top-paper-mcp-server/preferences.json`
+- **Reward Signals**: download=1.0, read=2.0 — updates term weights via exponential moving average
+- **Cold Start**: No re-ranking with <5 interactions; full preference weighting after 20+
+- **Exploration**: 10% random term selection (ε-greedy) to prevent filter bubbles
+
+### Related Papers Tools
+
+```python
+# Find similar papers via Semantic Scholar recommendations
+result = await call_tool("related_papers", {
+    "paper_id": "2506.08010",     # arXiv ID or Semantic Scholar ID
+    "mode": "recommendations",    # default
+    "limit": 10
+})
+
+# Find papers that cite this paper
+result = await call_tool("related_papers", {
+    "paper_id": "2506.08010",
+    "mode": "citations",
+    "limit": 10
+})
+
+# Find papers this paper references
+result = await call_tool("related_papers", {
+    "paper_id": "2506.08010",
+    "mode": "references",
+    "limit": 10
+})
+
+# Multi-paper recommendations (papers you found useful)
+result = await call_tool("related_papers", {
+    "paper_ids": ["2506.08010", "2505.05892"],
+    "negative_paper_ids": ["2501.99999"],  # papers you didn't find useful
+    "mode": "recommendations"
+})
+```
+
+Uses the **Semantic Scholar API** — free, no API key required for basic usage.
+
 ## ⚙️ Configuration
 
 | Setting | Purpose | Default |
@@ -274,6 +356,29 @@ could embed adversarial instructions designed to hijack the AI's behavior.
 ```bash
 python -m pytest
 ```
+
+## 🗺️ Roadmap
+
+### ✅ Completed
+- arXiv paper search, download, and reading
+- Dual-path conference search (arXiv + OpenReview) for 18+ top conferences
+- HuggingFace daily papers and metadata mirror
+- Smart search with query expansion and RRF fusion
+- Lightweight RL preference learning (Contextual Bandit)
+- Related papers discovery via Semantic Scholar (recommendations, citations, references)
+
+### 🔬 Planned
+- **Query Cache**: SQLite-based search result caching (24-72h TTL) for faster repeat queries
+- **Feedback Loop Enhancement**: Passive reward signals from session behavior (time spent reading, citation patterns)
+- **Connected Papers Integration**: Graph-based paper relationship visualization (requires API key)
+
+### 💡 Design Principles for RL
+- No large models — only lightweight vector operations
+- No GPU required — all computation is CPU-feasible
+- No training data needed — learns from live user interactions
+- Storage: single JSON file (~KB level)
+- Academic search has low dimensionality (~100 keyword features) — a weighted average is sufficient
+- User preferences in research are stable (a CV researcher stays in CV) — exponential decay handles interest drift naturally
 
 ## 📄 License
 

@@ -48,6 +48,8 @@ from .tools import (
     handle_unified_search,
 )
 from .tools import hf_daily_papers_tool, handle_hf_daily_papers
+from .tools import smart_search_tool, handle_smart_search, record_feedback_tool, handle_record_feedback
+from .tools import related_papers_tool, handle_related_papers
 from .prompts.handlers import list_prompts as handler_list_prompts
 from .prompts.handlers import get_prompt as handler_get_prompt
 
@@ -89,6 +91,9 @@ async def list_tools() -> List[types.Tool]:
         conference_download_tool,
         unified_search_tool,
         hf_daily_papers_tool,
+        smart_search_tool,
+        record_feedback_tool,
+        related_papers_tool,
     ]
 
 
@@ -141,6 +146,12 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextCont
             result = await handle_unified_search(arguments)
         elif name == "hf_daily_papers":
             result = await handle_hf_daily_papers(arguments)
+        elif name == "smart_search":
+            result = await handle_smart_search(arguments)
+        elif name == "record_feedback":
+            result = await handle_record_feedback(arguments)
+        elif name == "related_papers":
+            result = await handle_related_papers(arguments)
         else:
             result = [
                 types.TextContent(type="text", text=f"Error: Unknown tool {name}")
