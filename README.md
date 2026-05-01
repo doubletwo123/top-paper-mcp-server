@@ -45,6 +45,11 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 - 📈 **Preference Learning**: Lightweight RL (Contextual Bandit) that learns from user interactions — which expansion terms lead to useful results
 - 🎯 **Personalized Re-ranking**: Results improve over time as the system learns your research preferences
 
+### Related Papers Discovery
+- 🔍 **Recommendations**: Find papers similar to one or more seed papers via Semantic Scholar
+- 📚 **Citations & References**: Discover who cites a paper and what it references
+- 🆓 **Free & Open**: No API key required for basic usage
+
 ## Supported Conferences
 
 All conferences are searched via **dual-path**: arXiv (content) + OpenReview (conference metadata) in parallel.
