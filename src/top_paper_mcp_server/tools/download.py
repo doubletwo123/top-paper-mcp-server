@@ -15,18 +15,6 @@ import logging
 
 _MAX_TRACKED_CONVERSIONS = 100  # prevent unbounded growth of conversion_statuses
 
-# Optional PDF-conversion dependencies — only needed for the PDF fallback path.
-# Install with: pip install top-paper-mcp-server[pdf]
-try:
-    import pymupdf4llm
-    import fitz
-
-    _pdf_available = True
-except ImportError:  # pragma: no cover
-    pymupdf4llm = None  # type: ignore[assignment]
-    fitz = None  # type: ignore[assignment]
-    _pdf_available = False
-
 # Optional pro feature — gracefully degrade when not installed
 try:
     from .semantic_search import index_paper_by_id, index_paper_from_result
@@ -75,10 +63,6 @@ async def _run_index_from_result(arxiv_result) -> None:
 
 
 settings = Settings()
-
-if _pdf_available:
-    fitz.TOOLS.mupdf_display_errors(False)
-    fitz.TOOLS.mupdf_display_warnings(False)
 
 
 # ---------------------------------------------------------------------------
@@ -202,7 +186,13 @@ def _fetch_pdf_content(paper_id: str) -> tuple[str, arxiv.Result]:
     on network/conversion failures.
     Raises ImportError (with a helpful message) if the [pdf] extra is not installed.
     """
-    if not _pdf_available:
+    try:
+        import pymupdf4llm
+        import fitz
+
+        fitz.TOOLS.mupdf_display_errors(False)
+        fitz.TOOLS.mupdf_display_warnings(False)
+    except ImportError:
         raise ImportError(
             "PDF conversion requires the pdf extra: "
             "pip install top-paper-mcp-server[pdf]"
@@ -292,7 +282,9 @@ async def handle_download(arguments: Dict[str, Any]) -> List[types.TextContent]:
             ]
 
         # --- HTML not available: fall back to PDF ---
-        if not _pdf_available:
+        try:
+            import pymupdf4llm  # noqa: F401 — check availability before attempting download
+        except ImportError:
             return [
                 types.TextContent(
                     type="text",

@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import List
 import arxiv
-import pymupdf4llm
 import aiofiles
 import logging
 from pydantic import AnyUrl
@@ -38,6 +37,9 @@ class PaperManager:
         try:
             paper = next(self.client.results(arxiv.Search(id_list=[paper_id])))
             paper.download_pdf(dirpath=self.storage_path, filename=paper_pdf_path)
+
+            import pymupdf4llm
+
             markdown = pymupdf4llm.to_markdown(paper_pdf_path, show_progress=False)
 
             async with aiofiles.open(paper_md_path, "w", encoding="utf-8") as f:

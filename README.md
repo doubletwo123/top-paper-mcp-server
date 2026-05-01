@@ -29,39 +29,38 @@ The Top Paper MCP Server provides a bridge between AI assistants and academic re
 - 🗃️ **Local Storage**: Papers are saved locally for faster access
 
 ### Conference Support
-- 🔎 **Conference Search**: Search papers from top AI/ML/CV/NLP conferences:
-  - **CVF**: CVPR, ICCV, WACV
-  - **ECVA**: ECCV
-  - **OpenReview**: ICLR, NeurIPS, ICML, AAAI, IJCAI, ACL, EMNLP, NAACL, COLM, CoRL, MLSYS, MICCAI, IWSLT, INTERSPEECH
-- 📄 **Paper Download**: Download papers from conference websites
+- 🔎 **Dual-Path Conference Search**: Searches both arXiv and OpenReview in parallel, then merges results — arXiv provides full paper content (abstracts, PDFs) while OpenReview provides conference venue metadata
+- 📄 **Conference Download**: Download papers via OpenReview API with arXiv fallback
 - 📝 **Prompts**: Research prompts for paper analysis
 
 ## Supported Conferences
 
-| Conference | Data Source | Year Range |
-|------------|-------------|------------|
+All conferences are searched via **dual-path**: arXiv (content) + OpenReview (conference metadata) in parallel.
+
+| Conference | arXiv Category | Year Range |
+|------------|---------------|------------|
 | **Computer Vision** |
-| CVPR | CVF Open Access | 2000-present |
-| ICCV | CVF Open Access | 2000-present |
-| WACV | CVF Open Access | 2000-present |
-| ECCV | ECVA | 2000-present |
+| CVPR | cs.CV | 2000-present |
+| ICCV | cs.CV | 2000-present |
+| WACV | cs.CV | 2000-present |
+| ECCV | cs.CV | 2000-present |
 | **Machine Learning / AI** |
-| ICLR | OpenReview API | 2000-present |
-| NeurIPS | OpenReview API | 2000-present |
-| ICML | OpenReview API | 2000-present |
-| AAAI | OpenReview API | 2000-present |
-| IJCAI | OpenReview API | 2000-present |
-| COLM | OpenReview API | 2000-present |
-| CoRL | OpenReview API | 2000-present |
-| MLSYS | OpenReview API | 2020-present |
+| ICLR | cs.LG, cs.AI, cs.CL | 2000-present |
+| NeurIPS | cs.LG, cs.AI, cs.CL, stat.ML | 2000-present |
+| ICML | cs.LG, stat.ML | 2000-present |
+| AAAI | cs.AI | 2000-present |
+| IJCAI | cs.AI | 2000-present |
+| COLM | cs.CL, cs.LG | 2000-present |
+| CoRL | cs.RO, cs.LG, cs.AI | 2000-present |
+| MLSYS | cs.LG, cs.DC | 2020-present |
 | **NLP** |
-| ACL | OpenReview API | 2000-present |
-| EMNLP | OpenReview API | 2000-present |
-| NAACL | OpenReview API | 2000-present |
+| ACL | cs.CL | 2000-present |
+| EMNLP | cs.CL | 2000-present |
+| NAACL | cs.CL | 2000-present |
 | **Speech / Multimodal** |
-| INTERSPEECH | OpenReview API | 2000-present |
-| IWSLT | OpenReview API | 2000-present |
-| MICCAI | OpenReview API | 2000-present |
+| INTERSPEECH | eess.AS, cs.CL | 2000-present |
+| IWSLT | cs.CL | 2000-present |
+| MICCAI | cs.CV, eess.IV | 2000-present |
 
 ## 🚀 Quick Start
 
@@ -174,7 +173,7 @@ result = await call_tool("read_paper", {
 ### Conference Tools
 
 ```python
-# Search single conference
+# Search single conference (dual-path: arXiv + OpenReview in parallel)
 result = await call_tool("conference_search", {
     "query": "object detection",
     "conference": "CVPR",
@@ -182,7 +181,7 @@ result = await call_tool("conference_search", {
     "max_results": 10
 })
 
-# Multi-conference concurrent search (NEW!)
+# Multi-conference concurrent search
 result = await call_tool("conference_search", {
     "query": "transformer",
     "conference": "NeurIPS",
@@ -208,24 +207,23 @@ result = await call_tool("unified_search", {
     "total_results": 20
 })
 
-# Download conference paper
+# Download conference paper (OpenReview API with arXiv fallback)
 result = await call_tool("conference_download", {
     "paper_id": "12345",
-    "conference": "CVPR",
-    "year": 2024
+    "conference": "CVPR"
 })
 ```
 
-#### Multi-Threaded Concurrent Search Features
+#### Dual-Path Search Architecture
 
-- **Concurrent Execution**: Searches multiple conferences in parallel using asyncio
+- **Dual-Path**: Each conference query runs arXiv search and OpenReview search concurrently
+- **Result Merging**: Results are merged by title matching — OpenReview papers (with conference metadata) are primary, arXiv-only papers are supplementary
+- **Enrichment**: When a paper is found on both sources, the result includes arXiv content (abstracts, PDFs) plus OpenReview conference metadata
 - **Priority-Based Ordering**: Results sorted by conference priority (CVPR > NeurIPS > ICLR > ICML > ...)
 - **Category Filtering**: Filter by domain (computer_vision, machine_learning, nlp, ai, speech, medical, theory)
-- **Results Aggregation**: Merges and deduplicates results from multiple sources
-- **Rate Limiting**: Built-in semaphore limits concurrent requests (max 10) to prevent API throttling
-- **Timeout Protection**: Individual requests timeout after 30 seconds to prevent slow endpoints blocking
-- **Automatic Retry**: Failed requests automatically retry up to 2 times with exponential backoff
-- **Error Resilience**: Graceful handling of partial failures - successful results still returned
+- **Concurrent Execution**: Searches multiple conferences in parallel using asyncio with semaphore (max 10)
+- **Timeout Protection**: Individual requests timeout after 30 seconds
+- **Automatic Retry**: Failed requests retry up to 2 times with exponential backoff
 
 ## ⚙️ Configuration
 

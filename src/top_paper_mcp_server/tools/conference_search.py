@@ -1,4 +1,4 @@
-"""Conference paper search tools."""
+"""Conference paper search tools — dual-path: arXiv + OpenReview."""
 
 import json
 import logging
@@ -8,32 +8,41 @@ from enum import IntEnum
 import mcp.types as types
 from mcp.types import ToolAnnotations
 
+from .conferences import OpenReviewSource, PaperMetadata
+from .conferences.openreview import VENUE_IDS
+from .search import _raw_arxiv_search
+
 MAX_CONCURRENT_SEARCHES = 10
 SEARCH_TIMEOUT = 30.0
 MAX_RETRIES = 2
-from .conferences import (
-    CVFSource,
-    OpenReviewSource,
-    NeurIPSSource,
-    ICMLSource,
-    AAAISource,
-    IJCaiSource,
-    ECCVSource,
-    ACMSource,
-    MLAnthologySource,
-)
 
 logger = logging.getLogger("top-paper-mcp-server")
 
-cvf_source = CVFSource()
 openreview_source = OpenReviewSource()
-neurips_source = NeurIPSSource()
-icml_source = ICMLSource()
-aaai_source = AAAISource()
-ijcai_source = IJCaiSource()
-eccv_source = ECCVSource()
-acm_source = ACMSource()
-mlanthology_source = MLAnthologySource()
+
+# Conference → arXiv category mapping for better arXiv search results
+CONFERENCE_ARXIV_CATEGORIES = {
+    "CVPR": ["cs.CV"],
+    "ICCV": ["cs.CV"],
+    "WACV": ["cs.CV"],
+    "ECCV": ["cs.CV"],
+    "NEURIPS": ["cs.LG", "cs.AI", "cs.CL", "stat.ML"],
+    "ICML": ["cs.LG", "stat.ML"],
+    "ICLR": ["cs.LG", "cs.AI", "cs.CL"],
+    "COLM": ["cs.CL", "cs.LG"],
+    "CORL": ["cs.RO", "cs.LG", "cs.AI"],
+    "MLSYS": ["cs.LG", "cs.DC"],
+    "MICCAI": ["cs.CV", "eess.IV"],
+    "IWSLT": ["cs.CL"],
+    "INTERSPEECH": ["eess.AS", "cs.CL"],
+    "ACL": ["cs.CL"],
+    "EMNLP": ["cs.CL"],
+    "NAACL": ["cs.CL"],
+    "AAAI": ["cs.AI"],
+    "IJCAI": ["cs.AI"],
+    "COLT": ["stat.ML", "cs.LG"],
+    "UAI": ["stat.ML", "cs.LG"],
+}
 
 
 class ConferencePriority(IntEnum):
@@ -59,7 +68,6 @@ class ConferencePriority(IntEnum):
     INTERSPEECH = 15
     COLT = 10
     UAI = 5
-    ACM = 1
 
 
 CONFERENCE_PRIORITY = {
@@ -88,11 +96,14 @@ CATEGORY_PRIORITY = {
 }
 
 AVAILABLE_CONFERENCES = {
-    "CVF": ["CVPR", "ICCV", "WACV"],
     "OpenReview": [
         "ICLR",
         "NeurIPS",
         "ICML",
+        "CVPR",
+        "ICCV",
+        "WACV",
+        "ECCV",
         "AAAI",
         "IJCAI",
         "ACL",
@@ -105,59 +116,10 @@ AVAILABLE_CONFERENCES = {
         "IWSLT",
         "INTERSPEECH",
     ],
-    "ECVA": ["ECCV"],
-    "ACM": ["ACM"],
-    "MLAnthology": ["NeurIPS", "ICML", "ICLR", "COLT", "UAI"],
 }
 
-CONFERENCE_SOURCE_MAP = {
-    "CVPR": "cvf",
-    "ICCV": "cvf",
-    "WACV": "cvf",
-    "ECCV": "eccv",
-    "ICLR": "openreview",
-    "NEURIPS": "openreview",
-    "ICML": "openreview",
-    "AAAI": "openreview",
-    "IJCAI": "openreview",
-    "ACL": "openreview",
-    "EMNLP": "openreview",
-    "NAACL": "openreview",
-    "COLM": "openreview",
-    "CORL": "openreview",
-    "MLSYS": "openreview",
-    "MICCAI": "openreview",
-    "IWSLT": "openreview",
-    "INTERSPEECH": "openreview",
-    "COLT": "mlanthology",
-    "UAI": "mlanthology",
-    "ACM": "acm",
-}
-
-
-def _get_source(conference: str):
-    """Get the appropriate source for a conference."""
-    source_type = CONFERENCE_SOURCE_MAP.get(conference.upper())
-    if source_type == "cvf":
-        return cvf_source
-    elif source_type == "openreview":
-        return openreview_source
-    elif source_type == "neurips":
-        return neurips_source
-    elif source_type == "icml":
-        return icml_source
-    elif source_type == "aaai":
-        return aaai_source
-    elif source_type == "ijcai":
-        return ijcai_source
-    elif source_type == "eccv":
-        return eccv_source
-    elif source_type == "acm":
-        return acm_source
-    elif source_type == "mlanthology":
-        return mlanthology_source
-    else:
-        raise ValueError(f"Unknown conference: {conference}")
+# All conferences supported by OpenReview (derived from venue IDs for completeness)
+OPENREVIEW_CONFERENCES = {conf.upper() for conf, _year in VENUE_IDS.keys()}
 
 
 def _build_tool_description() -> str:
@@ -166,6 +128,10 @@ def _build_tool_description() -> str:
     for source, confs in AVAILABLE_CONFERENCES.items():
         conf_list.append(f"- **{source}**: {', '.join(confs)}")
     return f"""Search for papers in top AI/ML/CV conferences.
+
+Uses dual-path search: queries both arXiv and OpenReview in parallel, then merges
+results. arXiv provides full paper content (abstracts, PDFs), while OpenReview
+provides conference venue metadata.
 
 AVAILABLE CONFERENCES:
 {chr(10).join(conf_list)}
@@ -177,7 +143,7 @@ EXAMPLES:
 - Search ICLR 2025 papers about "transformer"
 - Search NeurIPS papers about "reinforcement learning"
 
-Note: Conference must be active on OpenReview/CVF for the specified year to return results."""
+Note: Results combine arXiv paper content with OpenReview conference metadata."""
 
 
 conference_search_tool = types.Tool(
@@ -213,7 +179,6 @@ conference_search_tool = types.Tool(
                     "MICCAI",
                     "IWSLT",
                     "INTERSPEECH",
-                    "ACM",
                 ],
             },
             "year": {
@@ -227,7 +192,7 @@ conference_search_tool = types.Tool(
             },
             "search_all": {
                 "type": "boolean",
-                "description": "Search across ALL conferences concurrently with multi-threading (default: false)",
+                "description": "Search across ALL conferences concurrently (default: false)",
                 "default": False,
             },
             "conferences": {
@@ -246,10 +211,178 @@ conference_search_tool = types.Tool(
 )
 
 
+async def _search_arxiv_for_conference(
+    query: str,
+    conference: str,
+    year: int,
+    max_results: int,
+) -> List[Dict[str, Any]]:
+    """Search arXiv with conference-specific category filtering and date range."""
+    categories = CONFERENCE_ARXIV_CATEGORIES.get(conference.upper())
+    date_from = f"{year}-01-01"
+    date_to = f"{year}-12-31"
+
+    try:
+        results = await _raw_arxiv_search(
+            query=query,
+            max_results=max_results,
+            sort_by="relevance",
+            date_from=date_from,
+            date_to=date_to,
+            categories=categories,
+        )
+        return results
+    except Exception as e:
+        logger.warning(f"arXiv search failed for {conference} {year}: {e}")
+        return []
+
+
+async def _search_openreview_for_conference(
+    query: str,
+    conference: str,
+    year: int,
+    max_results: int,
+) -> List[PaperMetadata]:
+    """Search OpenReview for conference papers."""
+    if conference.upper() not in OPENREVIEW_CONFERENCES:
+        return []
+
+    try:
+        papers = await openreview_source.search(query, conference, year, max_results)
+        return papers
+    except Exception as e:
+        logger.warning(f"OpenReview search failed for {conference} {year}: {e}")
+        return []
+
+
+def _merge_results(
+    arxiv_results: List[Dict[str, Any]],
+    openreview_papers: List[PaperMetadata],
+    conference: str,
+    year: int,
+) -> List[Dict[str, Any]]:
+    """Merge arXiv and OpenReview results.
+
+    Strategy:
+    - OpenReview papers are primary (they have conference metadata)
+    - If an OpenReview paper has an arXiv ID, enrich with arXiv data
+    - arXiv-only papers (not on OpenReview) are added as supplementary
+    """
+    # Index OpenReview papers by title (normalized) for dedup
+    openreview_by_title: Dict[str, Dict[str, Any]] = {}
+    for paper in openreview_papers:
+        key = paper.title.lower().strip()
+        entry = paper.to_dict()
+        entry["source"] = "openreview"
+        entry["conference"] = conference.upper()
+        entry["year"] = year
+        openreview_by_title[key] = entry
+
+    # Index arXiv results by title (normalized) for dedup
+    arxiv_by_title: Dict[str, Dict[str, Any]] = {}
+    for result in arxiv_results:
+        key = result.get("title", "").lower().strip()
+        result["source"] = "arxiv"
+        result["conference"] = conference.upper()
+        result["year"] = year
+        arxiv_by_title[key] = result
+
+    merged: List[Dict[str, Any]] = []
+    seen_titles: set = set()
+
+    # 1. OpenReview papers (primary — have conference metadata)
+    for title_key, paper in openreview_by_title.items():
+        # Check if arXiv has a matching paper to enrich
+        arxiv_match = arxiv_by_title.get(title_key)
+        if arxiv_match:
+            # Enrich OpenReview paper with arXiv data
+            paper["arxiv_id"] = arxiv_match.get("id")
+            paper["arxiv_categories"] = arxiv_match.get("categories", [])
+            paper["pdf_url"] = arxiv_match.get("url") or paper.get("pdf_url")
+        merged.append(paper)
+        seen_titles.add(title_key)
+
+    # 2. arXiv-only papers (not found on OpenReview)
+    for title_key, result in arxiv_by_title.items():
+        if title_key not in seen_titles:
+            merged.append(result)
+            seen_titles.add(title_key)
+
+    return merged
+
+
+async def _search_single_conference_dual(
+    query: str,
+    conference: str,
+    year: int,
+    max_results: int,
+    semaphore: Optional[asyncio.Semaphore] = None,
+) -> tuple[str, List[Dict[str, Any]]]:
+    """Search a single conference using dual-path (arXiv + OpenReview)."""
+
+    async def _search():
+        # Run both searches concurrently
+        arxiv_task = _search_arxiv_for_conference(query, conference, year, max_results)
+        openreview_task = _search_openreview_for_conference(
+            query, conference, year, max_results
+        )
+
+        arxiv_results, openreview_papers = await asyncio.gather(
+            arxiv_task, openreview_task, return_exceptions=True
+        )
+
+        if isinstance(arxiv_results, Exception):
+            logger.warning(f"arXiv search exception for {conference}: {arxiv_results}")
+            arxiv_results = []
+        if isinstance(openreview_papers, Exception):
+            logger.warning(
+                f"OpenReview search exception for {conference}: {openreview_papers}"
+            )
+            openreview_papers = []
+
+        return _merge_results(arxiv_results, openreview_papers, conference, year)
+
+    if semaphore:
+        async with semaphore:
+            papers = await asyncio.wait_for(_search(), timeout=SEARCH_TIMEOUT)
+    else:
+        papers = await asyncio.wait_for(_search(), timeout=SEARCH_TIMEOUT)
+
+    return conference, papers
+
+
+async def _search_with_retry(
+    query: str,
+    conference: str,
+    year: int,
+    max_results: int,
+    semaphore: asyncio.Semaphore,
+) -> tuple[str, List[Dict[str, Any]]]:
+    """Search with timeout and retry logic."""
+    for attempt in range(MAX_RETRIES):
+        try:
+            return await _search_single_conference_dual(
+                query, conference, year, max_results, semaphore
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                f"Timeout for {conference} (attempt {attempt + 1}/{MAX_RETRIES})"
+            )
+            if attempt == MAX_RETRIES - 1:
+                return conference, []
+        except Exception as e:
+            logger.warning(f"Search error for {conference}: {e}")
+            if attempt == MAX_RETRIES - 1:
+                return conference, []
+            await asyncio.sleep(0.5 * (attempt + 1))
+
+    return conference, []
+
+
 async def handle_conference_search(
     arguments: Dict[str, Any],
 ) -> List[types.TextContent]:
-    """Handle conference paper search with optional multi-conference concurrent search."""
+    """Handle conference paper search with dual-path (arXiv + OpenReview)."""
     try:
         query = arguments.get("query", "")
         conference = arguments.get("conference", "").upper()
@@ -272,8 +405,11 @@ async def handle_conference_search(
             else:
                 target_conferences = list(CONFERENCE_PRIORITY.keys())
 
+            # Filter to supported conferences
             target_conferences = [
-                c for c in target_conferences if c in CONFERENCE_SOURCE_MAP
+                c
+                for c in target_conferences
+                if c in OPENREVIEW_CONFERENCES or c in CONFERENCE_ARXIV_CATEGORIES
             ]
 
             if not target_conferences:
@@ -284,14 +420,11 @@ async def handle_conference_search(
                     )
                 ]
 
-            search_tasks = []
             semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES)
-            for conf in target_conferences:
-                source = _get_source(conf)
-                task = _search_with_semaphore(
-                    source, query, conf, year, max_results, semaphore
-                )
-                search_tasks.append(task)
+            search_tasks = [
+                _search_with_retry(query, conf, year, max_results, semaphore)
+                for conf in target_conferences
+            ]
 
             results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
@@ -306,13 +439,14 @@ async def handle_conference_search(
                     priority = _get_conference_priority(conf_name)
                     category = _get_category(conf_name) or "other"
                     for paper in papers:
-                        paper_dict = paper.to_dict()
-                        paper_dict["_search_priority"] = priority
-                        paper_dict["_search_category"] = category
-                        all_papers.append(paper_dict)
+                        paper["_search_priority"] = priority
+                        paper["_search_category"] = category
+                        all_papers.append(paper)
                     conference_results[conf_name] = len(papers)
 
-            all_papers.sort(key=lambda x: (-x["_search_priority"], x.get("title", "")))
+            all_papers.sort(
+                key=lambda x: (-x.get("_search_priority", 0), x.get("title", ""))
+            )
 
             final_papers = all_papers[: max_results * 3]
             for paper in final_papers:
@@ -338,8 +472,9 @@ async def handle_conference_search(
                 )
             ]
 
-        source = _get_source(conference)
-        papers = await source.search(query, conference, year, max_results)
+        _, papers = await _search_single_conference_dual(
+            query, conference, year, max_results
+        )
 
         if not papers:
             return [
@@ -360,7 +495,7 @@ async def handle_conference_search(
             "total_results": len(papers),
             "conference": conference,
             "year": year,
-            "papers": [p.to_dict() for p in papers],
+            "papers": papers,
         }
 
         return [types.TextContent(type="text", text=json.dumps(results, indent=2))]
@@ -388,13 +523,13 @@ def _get_category(conference: str) -> Optional[str]:
 unified_search_tool = types.Tool(
     name="unified_search",
     annotations=ToolAnnotations(readOnlyHint=True, openWorldHint=True),
-    description="""Unified search across multiple conferences with concurrent execution.
+    description="""Unified search across multiple conferences with dual-path (arXiv + OpenReview).
 
 FEATURES:
-- Concurrent search across multiple conferences in parallel threads
+- Concurrent dual-path search: arXiv + OpenReview in parallel per conference
+- Results merged by title matching — OpenReview provides conference metadata, arXiv provides content
 - Priority-based ordering (CVPR > NeurIPS > ICLR > ICML > ...)
 - Category-based filtering (computer_vision, machine_learning, nlp, ai, speech, medical, theory)
-- Results sorted by conference priority and relevance
 
 INPUT:
 - query: Search keywords
@@ -426,7 +561,10 @@ EXAMPLES:
             },
             "categories": {
                 "type": "array",
-                "items": {"type": "string", "enum": list(CONFERENCE_CATEGORIES.keys())},
+                "items": {
+                    "type": "string",
+                    "enum": list(CONFERENCE_CATEGORIES.keys()),
+                },
                 "description": "Filter by conference categories",
             },
             "max_results_per_conference": {
@@ -445,72 +583,16 @@ EXAMPLES:
 )
 
 
-async def _search_single_conference(
-    source,
-    query: str,
-    conference: str,
-    year: int,
-    max_results: int,
-    semaphore: Optional[asyncio.Semaphore] = None,
-) -> tuple[str, List]:
-    """Search a single conference with timeout and optional semaphore限流."""
-
-    async def _search_with_timeout():
-        for attempt in range(MAX_RETRIES):
-            try:
-                papers = await asyncio.wait_for(
-                    source.search(query, conference, year, max_results),
-                    timeout=SEARCH_TIMEOUT,
-                )
-                return papers
-            except asyncio.TimeoutError:
-                logger.warning(
-                    f"Timeout for {conference} (attempt {attempt + 1}/{MAX_RETRIES})"
-                )
-                if attempt == MAX_RETRIES - 1:
-                    return []
-            except Exception as e:
-                logger.warning(f"Search error for {conference}: {e}")
-                if attempt == MAX_RETRIES - 1:
-                    return []
-                await asyncio.sleep(0.5 * (attempt + 1))
-        return []
-
-    if semaphore:
-        async with semaphore:
-            papers = await _search_with_timeout()
-    else:
-        papers = await _search_with_timeout()
-
-    return conference, papers
-
-
-async def _search_with_semaphore(
-    source,
-    query: str,
-    conference: str,
-    year: int,
-    max_results: int,
-    semaphore: asyncio.Semaphore,
-) -> tuple[str, List]:
-    """Wrapper for concurrent search with semaphore限流."""
-    return await _search_single_conference(
-        source, query, conference, year, max_results, semaphore
-    )
-
-
 async def handle_unified_search(
     arguments: Dict[str, Any],
 ) -> List[types.TextContent]:
-    """Handle unified multi-conference search with concurrent execution."""
+    """Handle unified multi-conference search with dual-path concurrent execution."""
     try:
         query = arguments.get("query", "")
         year = arguments.get("year", 2025)
         specified_conferences = arguments.get("conferences", [])
         categories = arguments.get("categories", [])
-        max_per_conference = min(
-            int(arguments.get("max_results_per_conference", 5)), 20
-        )
+        max_per_conference = min(int(arguments.get("max_results_per_conference", 5)), 20)
         total_results = min(int(arguments.get("total_results", 20)), 100)
 
         if not query:
@@ -531,8 +613,11 @@ async def handle_unified_search(
         else:
             target_conferences = list(CONFERENCE_PRIORITY.keys())
 
+        # Filter to supported conferences
         target_conferences = [
-            c for c in target_conferences if c in CONFERENCE_SOURCE_MAP
+            c
+            for c in target_conferences
+            if c in OPENREVIEW_CONFERENCES or c in CONFERENCE_ARXIV_CATEGORIES
         ]
 
         if not target_conferences:
@@ -543,14 +628,11 @@ async def handle_unified_search(
                 )
             ]
 
-        search_tasks = []
         semaphore = asyncio.Semaphore(MAX_CONCURRENT_SEARCHES)
-        for conf in target_conferences:
-            source = _get_source(conf)
-            task = _search_with_semaphore(
-                source, query, conf, year, max_per_conference, semaphore
-            )
-            search_tasks.append(task)
+        search_tasks = [
+            _search_with_retry(query, conf, year, max_per_conference, semaphore)
+            for conf in target_conferences
+        ]
 
         results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
@@ -565,13 +647,14 @@ async def handle_unified_search(
                 priority = _get_conference_priority(conference)
                 category = _get_category(conference) or "other"
                 for paper in papers:
-                    paper_dict = paper.to_dict()
-                    paper_dict["_search_priority"] = priority
-                    paper_dict["_search_category"] = category
-                    all_papers.append(paper_dict)
+                    paper["_search_priority"] = priority
+                    paper["_search_category"] = category
+                    all_papers.append(paper)
                 conference_results[conference] = len(papers)
 
-        all_papers.sort(key=lambda x: (-x["_search_priority"], x.get("title", "")))
+        all_papers.sort(
+            key=lambda x: (-x.get("_search_priority", 0), x.get("title", ""))
+        )
 
         final_papers = all_papers[:total_results]
         for paper in final_papers:

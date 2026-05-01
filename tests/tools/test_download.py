@@ -131,7 +131,7 @@ async def test_html_404_falls_back_to_pdf(temp_storage_path, mocker):
         "top_paper_mcp_server.tools.download.get_paper_path", side_effect=fake_path
     )
     # Simulate pdf extra being available so the PDF fallback path is reached
-    mocker.patch("top_paper_mcp_server.tools.download._pdf_available", True)
+    mocker.patch.dict("sys.modules", {"pymupdf4llm": MagicMock(), "fitz": MagicMock()})
 
     # HTML not available
     mocker.patch(
@@ -168,7 +168,7 @@ async def test_paper_not_found_on_arxiv(temp_storage_path, mocker):
         "top_paper_mcp_server.tools.download.get_paper_path", side_effect=fake_path
     )
     # Simulate pdf extra being available so the PDF fallback path is reached
-    mocker.patch("top_paper_mcp_server.tools.download._pdf_available", True)
+    mocker.patch.dict("sys.modules", {"pymupdf4llm": MagicMock(), "fitz": MagicMock()})
 
     # HTML not available
     mocker.patch(

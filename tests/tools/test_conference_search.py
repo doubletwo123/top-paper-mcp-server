@@ -1,4 +1,4 @@
-"""Tests for conference search functionality."""
+"""Tests for conference search functionality — dual-path (arXiv + OpenReview)."""
 
 import pytest
 import json
@@ -9,99 +9,53 @@ from top_paper_mcp_server.tools.conference_search import (
     ConferencePriority,
     CONFERENCE_PRIORITY,
     CONFERENCE_CATEGORIES,
-    CONFERENCE_SOURCE_MAP,
     _get_conference_priority,
     _get_category,
-    _get_source,
 )
 from top_paper_mcp_server.tools.conferences.base import PaperMetadata
 
 
-class MockConferenceSource:
-    """Mock conference source for testing."""
+MOCK_PAPER = PaperMetadata(
+    paper_id="or_12345",
+    title="Test Paper for CVPR 2024",
+    authors=["Test Author"],
+    abstract="Test abstract content",
+    year=2024,
+    conference="CVPR",
+    url="https://openreview.net/forum?id=or_12345",
+    pdf_url="https://openreview.net/pdf?id=or_12345",
+)
 
-    def __init__(self, name="mock"):
-        self._name = name
-
-    @property
-    def name(self):
-        return self._name
-
-    async def search(self, query, conference, year, max_results=10):
-        return [
-            PaperMetadata(
-                paper_id="12345",
-                title=f"Test Paper for {conference} {year}",
-                authors=["Test Author"],
-                abstract="Test abstract content",
-                year=year,
-                conference=conference,
-                url=f"https://example.com/{conference}/{year}/12345",
-                pdf_url=f"https://example.com/{conference}/{year}/12345.pdf",
-            )
-        ]
-
-    async def get_paper(self, paper_id, conference):
-        return PaperMetadata(
-            paper_id=paper_id,
-            title=f"Test Paper {paper_id}",
-            authors=["Test Author"],
-            abstract="Test abstract",
-            year=2024,
-            conference=conference,
-            url=f"https://example.com/{conference}/{paper_id}",
-            pdf_url=f"https://example.com/{conference}/{paper_id}.pdf",
-        )
-
-    async def download_paper(self, paper_id, conference):
-        return {
-            "status": "success",
-            "content": f"Full paper content for {paper_id} from {conference}",
-            "source": "html",
-            "year": 2024,
-        }
+MOCK_ARXIV_RESULT = {
+    "id": "2401.12345",
+    "title": "Test Paper for CVPR 2024",
+    "authors": ["Test Author"],
+    "abstract": "[EXTERNAL CONTENT] Test abstract content",
+    "categories": ["cs.CV"],
+    "published": "2024-01-15T00:00:00Z",
+    "url": "http://arxiv.org/pdf/2401.12345",
+    "resource_uri": "arxiv://2401.12345",
+}
 
 
 @pytest.fixture
-def mock_sources():
-    """Patch all conference sources with mock."""
-    with (
-        patch(
-            "top_paper_mcp_server.tools.conference_search.cvf_source",
-            MockConferenceSource("cvf"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.openreview_source",
-            MockConferenceSource("openreview"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.neurips_source",
-            MockConferenceSource("neurips"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.icml_source",
-            MockConferenceSource("icml"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.aaai_source",
-            MockConferenceSource("aaai"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.ijcai_source",
-            MockConferenceSource("ijcai"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.eccv_source",
-            MockConferenceSource("eccv"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.acm_source",
-            MockConferenceSource("acm"),
-        ),
-        patch(
-            "top_paper_mcp_server.tools.conference_search.mlanthology_source",
-            MockConferenceSource("mlanthology"),
-        ),
+def mock_openreview():
+    """Patch OpenReview source with mock."""
+    mock_source = MagicMock()
+    mock_source.search = AsyncMock(return_value=[MOCK_PAPER])
+    with patch(
+        "top_paper_mcp_server.tools.conference_search.openreview_source",
+        mock_source,
+    ):
+        yield mock_source
+
+
+@pytest.fixture
+def mock_arxiv():
+    """Patch arXiv search with mock."""
+    with patch(
+        "top_paper_mcp_server.tools.conference_search._raw_arxiv_search",
+        AsyncMock(return_value=[MOCK_ARXIV_RESULT]),
     ):
         yield
 
@@ -121,19 +75,18 @@ def test_conference_priority_ordering():
 
 
 def test_all_conferences_have_priority():
-    """Test that every conference in SOURCE_MAP has a priority."""
-    for conf in CONFERENCE_SOURCE_MAP:
-        assert conf in CONFERENCE_PRIORITY, f"{conf} missing priority"
+    """Test that every conference in CONFERENCE_CATEGORIES has a priority."""
+    for confs in CONFERENCE_CATEGORIES.values():
+        for conf in confs:
+            assert conf in CONFERENCE_PRIORITY, f"{conf} missing priority"
 
 
 def test_conference_categories_coverage():
-    """Test that all conferences in SOURCE_MAP (except ACM) are categorized."""
+    """Test that all conferences in CONFERENCE_PRIORITY are categorized."""
     all_categorized = set()
     for confs in CONFERENCE_CATEGORIES.values():
         all_categorized.update(confs)
     for conf in CONFERENCE_PRIORITY:
-        if conf == "ACM":
-            continue
         assert conf in all_categorized, f"{conf} not categorized"
 
 
@@ -160,8 +113,8 @@ def test_get_category():
 
 
 @pytest.mark.asyncio
-async def test_single_conference_search(mock_sources):
-    """Test searching a single conference."""
+async def test_single_conference_search(mock_openreview, mock_arxiv):
+    """Test searching a single conference with dual-path."""
     result = await handle_conference_search(
         {"query": "transformer", "conference": "CVPR", "year": 2024, "max_results": 5}
     )
@@ -171,8 +124,6 @@ async def test_single_conference_search(mock_sources):
     assert content["conference"] == "CVPR"
     assert content["year"] == 2024
     assert len(content["papers"]) >= 1
-    paper = content["papers"][0]
-    assert "CVPR" in paper["title"]
 
 
 @pytest.mark.asyncio
@@ -187,7 +138,7 @@ async def test_search_missing_params():
 
 
 @pytest.mark.asyncio
-async def test_search_all_concurrent(mock_sources):
+async def test_search_all_concurrent(mock_openreview, mock_arxiv):
     """Test search_all=True searches multiple conferences concurrently."""
     result = await handle_conference_search(
         {
@@ -206,7 +157,7 @@ async def test_search_all_concurrent(mock_sources):
 
 
 @pytest.mark.asyncio
-async def test_search_by_category(mock_sources):
+async def test_search_by_category(mock_openreview, mock_arxiv):
     """Test search_all with category filter."""
     result = await handle_conference_search(
         {
@@ -242,7 +193,7 @@ async def test_search_no_valid_conferences():
 
 
 @pytest.mark.asyncio
-async def test_search_max_results_capped(mock_sources):
+async def test_search_max_results_capped(mock_openreview, mock_arxiv):
     """Test that max_results is capped at 50."""
     result = await handle_conference_search(
         {
@@ -263,7 +214,7 @@ async def test_search_max_results_capped(mock_sources):
 
 
 @pytest.mark.asyncio
-async def test_unified_search_all(mock_sources):
+async def test_unified_search_all(mock_openreview, mock_arxiv):
     """Test unified search across all conferences."""
     result = await handle_unified_search(
         {
@@ -282,7 +233,7 @@ async def test_unified_search_all(mock_sources):
 
 
 @pytest.mark.asyncio
-async def test_unified_search_by_category(mock_sources):
+async def test_unified_search_by_category(mock_openreview, mock_arxiv):
     """Test unified search filtered by category."""
     result = await handle_unified_search(
         {
@@ -327,7 +278,7 @@ async def test_unified_search_no_valid_conferences():
 
 
 @pytest.mark.asyncio
-async def test_unified_search_total_results_capped(mock_sources):
+async def test_unified_search_total_results_capped(mock_openreview, mock_arxiv):
     """Test that total_results is capped at 100."""
     result = await handle_unified_search(
         {
@@ -344,7 +295,7 @@ async def test_unified_search_total_results_capped(mock_sources):
 
 
 @pytest.mark.asyncio
-async def test_unified_search_max_per_conference_capped(mock_sources):
+async def test_unified_search_max_per_conference_capped(mock_openreview, mock_arxiv):
     """Test that max_results_per_conference is capped at 20."""
     result = await handle_unified_search(
         {
@@ -358,26 +309,3 @@ async def test_unified_search_max_per_conference_capped(mock_sources):
 
     content = json.loads(result[0].text)
     assert "papers" in content
-
-
-# ---------------------------------------------------------------------------
-# _get_source Tests
-# ---------------------------------------------------------------------------
-
-
-def test_get_source_valid():
-    """Test getting source for valid conferences."""
-    source = _get_source("CVPR")
-    assert source is not None
-
-    source = _get_source("NeurIPS")
-    assert source is not None
-
-    source = _get_source("ICLR")
-    assert source is not None
-
-
-def test_get_source_invalid():
-    """Test getting source for invalid conference raises ValueError."""
-    with pytest.raises(ValueError, match="Unknown conference"):
-        _get_source("INVALID_CONF")
