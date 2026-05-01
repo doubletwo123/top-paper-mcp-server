@@ -8,7 +8,6 @@ from top_paper_mcp_server.tools.conference_download import (
     CONTENT_WARNING,
 )
 
-
 MOCK_OPENREVIEW_RESULT = {
     "status": "success",
     "paper_id": "or_12345",

@@ -14,7 +14,6 @@ from top_paper_mcp_server.tools.conference_search import (
 )
 from top_paper_mcp_server.tools.conferences.base import PaperMetadata
 
-
 MOCK_PAPER = PaperMetadata(
     paper_id="or_12345",
     title="Test Paper for CVPR 2024",

@@ -592,7 +592,9 @@ async def handle_unified_search(
         year = arguments.get("year", 2025)
         specified_conferences = arguments.get("conferences", [])
         categories = arguments.get("categories", [])
-        max_per_conference = min(int(arguments.get("max_results_per_conference", 5)), 20)
+        max_per_conference = min(
+            int(arguments.get("max_results_per_conference", 5)), 20
+        )
         total_results = min(int(arguments.get("total_results", 20)), 100)
 
         if not query:
