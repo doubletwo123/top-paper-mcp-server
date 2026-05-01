@@ -26,7 +26,12 @@ from .conference_search import (
 )
 from .conference_download import conference_download_tool, handle_conference_download
 from .huggingface import hf_daily_papers_tool, handle_hf_daily_papers
-from .smart_search import smart_search_tool, handle_smart_search, record_feedback_tool, handle_record_feedback
+from .smart_search import (
+    smart_search_tool,
+    handle_smart_search,
+    record_feedback_tool,
+    handle_record_feedback,
+)
 from .related_papers import related_papers_tool, handle_related_papers
 
 __all__ = [

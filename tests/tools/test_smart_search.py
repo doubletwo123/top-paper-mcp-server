@@ -23,8 +23,16 @@ def clear_session_log():
 def mock_arxiv_results():
     """Mock arXiv search to return consistent results."""
     results = [
-        {"id": "2401.00001", "title": "Register Tokens for Vision Transformers", "abstract": "Test abstract"},
-        {"id": "2401.00002", "title": "Attention Is All You Need", "abstract": "Test abstract 2"},
+        {
+            "id": "2401.00001",
+            "title": "Register Tokens for Vision Transformers",
+            "abstract": "Test abstract",
+        },
+        {
+            "id": "2401.00002",
+            "title": "Attention Is All You Need",
+            "abstract": "Test abstract 2",
+        },
     ]
     with patch(
         "top_paper_mcp_server.tools.smart_search._raw_arxiv_search",
@@ -101,26 +109,34 @@ async def test_smart_search_with_expansion(mock_arxiv_results, mock_preference_s
 
 @pytest.mark.asyncio
 async def test_smart_search_no_expand(mock_arxiv_results, mock_preference_store):
-    result = await handle_smart_search({"query": "register", "expand": False, "max_results": 5})
+    result = await handle_smart_search(
+        {"query": "register", "expand": False, "max_results": 5}
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert content["expanded_queries"] == ["register"]
 
 
 @pytest.mark.asyncio
-async def test_smart_search_with_pre_expanded_queries(mock_arxiv_results, mock_preference_store):
-    result = await handle_smart_search({
-        "query": "register",
-        "queries": ["register tokens", "registration", "learnable tokens"],
-        "max_results": 5,
-    })
+async def test_smart_search_with_pre_expanded_queries(
+    mock_arxiv_results, mock_preference_store
+):
+    result = await handle_smart_search(
+        {
+            "query": "register",
+            "queries": ["register tokens", "registration", "learnable tokens"],
+            "max_results": 5,
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert len(content["expanded_queries"]) == 3
 
 
 @pytest.mark.asyncio
-async def test_smart_search_logs_for_feedback(mock_arxiv_results, mock_preference_store):
+async def test_smart_search_logs_for_feedback(
+    mock_arxiv_results, mock_preference_store
+):
     await handle_smart_search({"query": "register", "max_results": 5})
     # Session log should have entries for returned papers
     assert len(_search_session_log) > 0
@@ -131,14 +147,18 @@ async def test_smart_search_with_conference(mock_arxiv_results, mock_preference_
     """Conference mode should use dual-path search."""
     with patch(
         "top_paper_mcp_server.tools.smart_search._run_conference_queries",
-        AsyncMock(return_value=[[{"id": "c1", "title": "Conf Paper", "abstract": "test"}]]),
+        AsyncMock(
+            return_value=[[{"id": "c1", "title": "Conf Paper", "abstract": "test"}]]
+        ),
     ):
-        result = await handle_smart_search({
-            "query": "register",
-            "conference": "CVPR",
-            "year": 2025,
-            "max_results": 5,
-        })
+        result = await handle_smart_search(
+            {
+                "query": "register",
+                "conference": "CVPR",
+                "year": 2025,
+                "max_results": 5,
+            }
+        )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert content.get("conference") == "CVPR"
@@ -177,19 +197,19 @@ async def test_record_feedback_success():
     """Feedback recorded when paper is in session log."""
     _search_session_log["paper123"] = ["register", "tokens"]
 
-    with patch(
-        "top_paper_mcp_server.tools.smart_search.PreferenceStore"
-    ) as MockStore:
+    with patch("top_paper_mcp_server.tools.smart_search.PreferenceStore") as MockStore:
         mock_instance = MagicMock()
         mock_instance.load = MagicMock()
         mock_instance.interaction_count = 1
         mock_instance.record_reward = MagicMock()
         MockStore.return_value = mock_instance
 
-        result = await handle_record_feedback({
-            "paper_id": "paper123",
-            "action": "download",
-        })
+        result = await handle_record_feedback(
+            {
+                "paper_id": "paper123",
+                "action": "download",
+            }
+        )
 
     content = json.loads(result[0].text)
     assert content["status"] == "success"
@@ -204,19 +224,19 @@ async def test_record_feedback_read():
     """Read action gives higher reward."""
     _search_session_log["paper456"] = ["attention"]
 
-    with patch(
-        "top_paper_mcp_server.tools.smart_search.PreferenceStore"
-    ) as MockStore:
+    with patch("top_paper_mcp_server.tools.smart_search.PreferenceStore") as MockStore:
         mock_instance = MagicMock()
         mock_instance.load = MagicMock()
         mock_instance.interaction_count = 1
         mock_instance.record_reward = MagicMock()
         MockStore.return_value = mock_instance
 
-        result = await handle_record_feedback({
-            "paper_id": "paper456",
-            "action": "read",
-        })
+        result = await handle_record_feedback(
+            {
+                "paper_id": "paper456",
+                "action": "read",
+            }
+        )
 
     content = json.loads(result[0].text)
     assert content["reward"] == 2.0

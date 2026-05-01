@@ -9,7 +9,6 @@ from top_paper_mcp_server.tools.query_expansion import (
     _normalize_title,
 )
 
-
 # ---------------------------------------------------------------------------
 # _normalize_title Tests
 # ---------------------------------------------------------------------------
@@ -42,16 +41,13 @@ def test_fuzzy_case_insensitive():
 
 def test_fuzzy_subtitle_difference():
     """Titles that differ only by a subtitle should still match."""
-    assert _fuzzy_title_match(
-        "Vision Transformers: A Survey",
-        "Vision Transformers"
-    )
+    assert _fuzzy_title_match("Vision Transformers: A Survey", "Vision Transformers")
 
 
 def test_fuzzy_different_papers():
     assert not _fuzzy_title_match(
         "Attention Is All You Need",
-        "BERT Pre-training of Deep Bidirectional Transformers"
+        "BERT Pre-training of Deep Bidirectional Transformers",
     )
 
 
@@ -101,8 +97,12 @@ def test_candidates_limited():
 
 def test_extract_keywords_basic():
     papers = [
-        {"abstract": "[EXTERNAL CONTENT] Vision transformers use attention mechanisms for image classification"},
-        {"abstract": "[EXTERNAL CONTENT] Vision transformers achieve state of the art results on ImageNet"},
+        {
+            "abstract": "[EXTERNAL CONTENT] Vision transformers use attention mechanisms for image classification"
+        },
+        {
+            "abstract": "[EXTERNAL CONTENT] Vision transformers achieve state of the art results on ImageNet"
+        },
     ]
     keywords = _extract_keywords_from_results(papers, top_k=5)
     assert len(keywords) <= 5

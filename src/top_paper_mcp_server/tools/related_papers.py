@@ -23,7 +23,9 @@ S2_TIMEOUT = 20.0
 S2_FIELDS = "paperId,title,abstract,year,venue,citationCount,url,openAccessPdf,authors"
 
 
-async def _s2_get(endpoint: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+async def _s2_get(
+    endpoint: str, params: Optional[Dict[str, Any]] = None
+) -> Optional[Dict[str, Any]]:
     """Make a GET request to Semantic Scholar API."""
     url = f"{SEMANTIC_SCHOLAR_BASE}{endpoint}"
     try:
@@ -46,7 +48,11 @@ async def _s2_get(endpoint: str, params: Optional[Dict[str, Any]] = None) -> Opt
 
 def _normalize_arxiv_id(paper_id: str) -> str:
     """Normalize arXiv ID for Semantic Scholar (e.g., '2401.12345' -> 'ARXIV:2401.12345')."""
-    if paper_id.startswith("ARXIV:") or paper_id.startswith("Corr:") or paper_id.startswith("DOI:"):
+    if (
+        paper_id.startswith("ARXIV:")
+        or paper_id.startswith("Corr:")
+        or paper_id.startswith("DOI:")
+    ):
         return paper_id
     # Looks like an arXiv ID
     if "." in paper_id and paper_id[0].isdigit():
@@ -107,7 +113,9 @@ async def fetch_recommendations(
         async with httpx.AsyncClient(timeout=S2_TIMEOUT) as client:
             response = await client.post(url, json=body, params=params)
             if response.status_code in (404, 429):
-                logger.warning(f"Semantic Scholar recommendations: HTTP {response.status_code}")
+                logger.warning(
+                    f"Semantic Scholar recommendations: HTTP {response.status_code}"
+                )
                 return []
             response.raise_for_status()
             data = response.json()
@@ -173,14 +181,18 @@ async def handle_related_papers(
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps({"status": "error", "message": "paper_id or paper_ids is required"}),
+                text=json.dumps(
+                    {"status": "error", "message": "paper_id or paper_ids is required"}
+                ),
             )
         ]
 
     if mode == "recommendations":
         ids = paper_ids_raw if paper_ids_raw else [paper_id]
         negative_ids = arguments.get("negative_paper_ids", [])
-        papers = await fetch_recommendations(ids, limit=limit, negative_ids=negative_ids)
+        papers = await fetch_recommendations(
+            ids, limit=limit, negative_ids=negative_ids
+        )
 
         result = {
             "status": "success",
@@ -194,7 +206,12 @@ async def handle_related_papers(
             return [
                 types.TextContent(
                     type="text",
-                    text=json.dumps({"status": "error", "message": "paper_id is required for citations/references mode"}),
+                    text=json.dumps(
+                        {
+                            "status": "error",
+                            "message": "paper_id is required for citations/references mode",
+                        }
+                    ),
                 )
             ]
         data = await fetch_citations_and_references(paper_id, limit=limit)
@@ -211,7 +228,12 @@ async def handle_related_papers(
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps({"status": "error", "message": f"Unknown mode: '{mode}'. Use 'recommendations', 'citations', or 'references'."}),
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Unknown mode: '{mode}'. Use 'recommendations', 'citations', or 'references'.",
+                    }
+                ),
             )
         ]
 

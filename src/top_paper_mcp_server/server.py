@@ -48,7 +48,12 @@ from .tools import (
     handle_unified_search,
 )
 from .tools import hf_daily_papers_tool, handle_hf_daily_papers
-from .tools import smart_search_tool, handle_smart_search, record_feedback_tool, handle_record_feedback
+from .tools import (
+    smart_search_tool,
+    handle_smart_search,
+    record_feedback_tool,
+    handle_record_feedback,
+)
 from .tools import related_papers_tool, handle_related_papers
 from .prompts.handlers import list_prompts as handler_list_prompts
 from .prompts.handlers import get_prompt as handler_get_prompt

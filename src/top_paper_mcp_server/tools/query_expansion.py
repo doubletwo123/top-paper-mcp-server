@@ -166,10 +166,14 @@ def _rrf_fuse(
                 paper_scores[key] = 0.0
                 paper_objects[key] = paper
 
-            paper_scores[key] += 1.0 / (k + rank + 1)  # rank is 0-indexed, formula uses 1-indexed
+            paper_scores[key] += 1.0 / (
+                k + rank + 1
+            )  # rank is 0-indexed, formula uses 1-indexed
 
     # Sort by RRF score descending
-    sorted_keys = sorted(paper_scores.keys(), key=lambda x: paper_scores[x], reverse=True)
+    sorted_keys = sorted(
+        paper_scores.keys(), key=lambda x: paper_scores[x], reverse=True
+    )
 
     results = []
     for key in sorted_keys:

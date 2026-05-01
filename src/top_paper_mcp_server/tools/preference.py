@@ -177,7 +177,9 @@ class PreferenceStore:
 
         # Always include original query
         selected.append(original_query)
-        remaining = [(c, p) for c, p in remaining if c.lower() != original_query.lower()]
+        remaining = [
+            (c, p) for c, p in remaining if c.lower() != original_query.lower()
+        ]
 
         while len(selected) < top_k and remaining:
             # Weighted random choice

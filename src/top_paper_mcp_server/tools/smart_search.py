@@ -65,7 +65,13 @@ async def _run_arxiv_queries(
 ) -> List[List[Dict[str, Any]]]:
     """Run multiple arXiv queries concurrently."""
     tasks = [
-        _raw_arxiv_search(q, max_results=max_results, date_from=date_from, date_to=date_to, categories=categories)
+        _raw_arxiv_search(
+            q,
+            max_results=max_results,
+            date_from=date_from,
+            date_to=date_to,
+            categories=categories,
+        )
         for q in queries
     ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -86,7 +92,9 @@ async def _run_conference_queries(
         date_to = f"{year}-12-31"
 
         arxiv_task = _search_arxiv_for_conference(query, conference, year, max_results)
-        openreview_task = _search_openreview_for_conference(query, conference, year, max_results)
+        openreview_task = _search_openreview_for_conference(
+            query, conference, year, max_results
+        )
 
         arxiv_results, openreview_papers = await asyncio.gather(
             arxiv_task, openreview_task, return_exceptions=True
@@ -141,7 +149,9 @@ async def handle_smart_search(
         # Apply preference-based selection
         store = PreferenceStore()
         store.load()
-        selected = store.select_terms(candidates, original_query=query, top_k=min(3, _MAX_EXPANDED_QUERIES))
+        selected = store.select_terms(
+            candidates, original_query=query, top_k=min(3, _MAX_EXPANDED_QUERIES)
+        )
 
         all_queries = selected
         terms_used = selected
@@ -223,7 +233,12 @@ async def handle_record_feedback(
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps({"status": "error", "message": "action must be 'download' or 'read'"}),
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "message": "action must be 'download' or 'read'",
+                    }
+                ),
             )
         ]
 
@@ -233,11 +248,13 @@ async def handle_record_feedback(
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps({
-                    "status": "success",
-                    "message": f"No search session found for {paper_id}. Feedback not recorded.",
-                    "terms_found": False,
-                }),
+                text=json.dumps(
+                    {
+                        "status": "success",
+                        "message": f"No search session found for {paper_id}. Feedback not recorded.",
+                        "terms_found": False,
+                    }
+                ),
             )
         ]
 
@@ -253,14 +270,16 @@ async def handle_record_feedback(
     return [
         types.TextContent(
             type="text",
-            text=json.dumps({
-                "status": "success",
-                "paper_id": paper_id,
-                "action": action,
-                "reward": reward,
-                "terms_reinforced": terms,
-                "interaction_count": store.interaction_count,
-            }),
+            text=json.dumps(
+                {
+                    "status": "success",
+                    "paper_id": paper_id,
+                    "action": action,
+                    "reward": reward,
+                    "terms_reinforced": terms,
+                    "interaction_count": store.interaction_count,
+                }
+            ),
         )
     ]
 
@@ -295,9 +314,24 @@ smart_search_tool = types.Tool(
                 "type": "string",
                 "description": "Conference name (e.g., CVPR, NeurIPS, ICLR). Optional.",
                 "enum": [
-                    "CVPR", "ICCV", "WACV", "ECCV", "ICLR", "NeurIPS",
-                    "ICML", "AAAI", "IJCAI", "ACL", "EMNLP", "NAACL",
-                    "COLM", "CoRL", "MLSYS", "MICCAI", "IWSLT", "INTERSPEECH",
+                    "CVPR",
+                    "ICCV",
+                    "WACV",
+                    "ECCV",
+                    "ICLR",
+                    "NeurIPS",
+                    "ICML",
+                    "AAAI",
+                    "IJCAI",
+                    "ACL",
+                    "EMNLP",
+                    "NAACL",
+                    "COLM",
+                    "CoRL",
+                    "MLSYS",
+                    "MICCAI",
+                    "IWSLT",
+                    "INTERSPEECH",
                 ],
             },
             "year": {

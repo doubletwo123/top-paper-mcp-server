@@ -76,7 +76,9 @@ def test_format_paper_missing_fields():
 async def test_fetch_recommendations_success(mocker):
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.json.return_value = {"recommendedPapers": [MOCK_S2_PAPER, MOCK_S2_PAPER]}
+    mock_response.json.return_value = {
+        "recommendedPapers": [MOCK_S2_PAPER, MOCK_S2_PAPER]
+    }
     mock_response.raise_for_status = MagicMock()
 
     mock_client = AsyncMock()
@@ -84,7 +86,10 @@ async def test_fetch_recommendations_success(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.related_papers.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.related_papers.httpx.AsyncClient",
+        return_value=mock_client,
+    )
     results = await fetch_recommendations(["2401.12345"], limit=5)
     assert len(results) == 2
     assert results[0]["title"] == "Test Paper from Semantic Scholar"
@@ -100,7 +105,10 @@ async def test_fetch_recommendations_empty(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.related_papers.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.related_papers.httpx.AsyncClient",
+        return_value=mock_client,
+    )
     results = await fetch_recommendations(["nonexistent"])
     assert results == []
 
@@ -117,7 +125,10 @@ async def test_fetch_recommendations_with_negative(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.related_papers.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.related_papers.httpx.AsyncClient",
+        return_value=mock_client,
+    )
     await fetch_recommendations(["2401.12345"], negative_ids=["2401.99999"])
     call_args = mock_client.post.call_args
     body = call_args[1]["json"] if "json" in call_args[1] else call_args[0][1]
@@ -173,11 +184,13 @@ async def test_handle_recommendations(mocker):
         "top_paper_mcp_server.tools.related_papers.fetch_recommendations",
         AsyncMock(return_value=[_format_paper(MOCK_S2_PAPER)]),
     )
-    result = await handle_related_papers({
-        "paper_id": "2401.12345",
-        "mode": "recommendations",
-        "limit": 5,
-    })
+    result = await handle_related_papers(
+        {
+            "paper_id": "2401.12345",
+            "mode": "recommendations",
+            "limit": 5,
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert content["mode"] == "recommendations"
@@ -188,12 +201,16 @@ async def test_handle_recommendations(mocker):
 async def test_handle_citations(mocker):
     mocker.patch(
         "top_paper_mcp_server.tools.related_papers.fetch_citations_and_references",
-        AsyncMock(return_value={"citations": [_format_paper(MOCK_S2_PAPER)], "references": []}),
+        AsyncMock(
+            return_value={"citations": [_format_paper(MOCK_S2_PAPER)], "references": []}
+        ),
     )
-    result = await handle_related_papers({
-        "paper_id": "2401.12345",
-        "mode": "citations",
-    })
+    result = await handle_related_papers(
+        {
+            "paper_id": "2401.12345",
+            "mode": "citations",
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert content["mode"] == "citations"
@@ -204,12 +221,16 @@ async def test_handle_citations(mocker):
 async def test_handle_references(mocker):
     mocker.patch(
         "top_paper_mcp_server.tools.related_papers.fetch_citations_and_references",
-        AsyncMock(return_value={"citations": [], "references": [_format_paper(MOCK_S2_PAPER)]}),
+        AsyncMock(
+            return_value={"citations": [], "references": [_format_paper(MOCK_S2_PAPER)]}
+        ),
     )
-    result = await handle_related_papers({
-        "paper_id": "2401.12345",
-        "mode": "references",
-    })
+    result = await handle_related_papers(
+        {
+            "paper_id": "2401.12345",
+            "mode": "references",
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "success"
     assert content["mode"] == "references"
@@ -217,10 +238,12 @@ async def test_handle_references(mocker):
 
 @pytest.mark.asyncio
 async def test_handle_unknown_mode():
-    result = await handle_related_papers({
-        "paper_id": "2401.12345",
-        "mode": "invalid",
-    })
+    result = await handle_related_papers(
+        {
+            "paper_id": "2401.12345",
+            "mode": "invalid",
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "error"
     assert "Unknown mode" in content["message"]
@@ -228,9 +251,11 @@ async def test_handle_unknown_mode():
 
 @pytest.mark.asyncio
 async def test_handle_citations_requires_paper_id():
-    result = await handle_related_papers({
-        "paper_ids": ["2401.12345"],
-        "mode": "citations",
-    })
+    result = await handle_related_papers(
+        {
+            "paper_ids": ["2401.12345"],
+            "mode": "citations",
+        }
+    )
     content = json.loads(result[0].text)
     assert content["status"] == "error"
