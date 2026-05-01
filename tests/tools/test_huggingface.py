@@ -46,7 +46,10 @@ async def test_fetch_hf_paper_metadata_success(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_hf_paper_metadata("2401.12345")
     assert result is not None
@@ -65,7 +68,10 @@ async def test_fetch_hf_paper_metadata_not_found(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_hf_paper_metadata("nonexistent.00000")
     assert result is None
@@ -81,7 +87,10 @@ async def test_fetch_hf_paper_metadata_http_error(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_hf_paper_metadata("2401.12345")
     assert result is None
@@ -97,7 +106,10 @@ async def test_fetch_hf_paper_metadata_timeout(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_hf_paper_metadata("2401.12345")
     assert result is None
@@ -121,7 +133,10 @@ async def test_fetch_daily_papers_success(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_daily_papers("2024-01-15")
     assert len(result) == 2
@@ -143,7 +158,10 @@ async def test_fetch_daily_papers_no_date(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_daily_papers()
     assert result == []
@@ -161,7 +179,10 @@ async def test_fetch_daily_papers_http_error(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_daily_papers("2024-01-15")
     assert result == []
@@ -180,7 +201,10 @@ async def test_fetch_daily_papers_non_list_response(mocker):
     mock_client.__aenter__ = AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = AsyncMock(return_value=False)
 
-    mocker.patch("top_paper_mcp_server.tools.huggingface.httpx.AsyncClient", return_value=mock_client)
+    mocker.patch(
+        "top_paper_mcp_server.tools.huggingface.httpx.AsyncClient",
+        return_value=mock_client,
+    )
 
     result = await fetch_daily_papers()
     assert result == []
